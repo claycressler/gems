@@ -1,0 +1,353 @@
+
+pick_individuals <- function(N0, traitmean, traitsd) {
+    mu <- log(traitmean^2 / sqrt((traitsd)^2+traitmean^2))
+    sigma <- sqrt(log(traitsd^2 + 1))
+    ## record this initial distribution in the output
+    return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+
+## need to specify the initial system state (initialstate), the initial trait mean and CV, the "heritability", and a vector of parameter values
+sir_GEM <- function(seed, tmax, dt, initialstate, traitmean, traitcv, h2, params, report=FALSE) {
+    ## Extract the parameters
+    b <- unname(params["b"]) ## birth rate
+    m <- unname(params["m"]) ## natural death rate
+    B0 <- unname(params["B0"]) ## transmission rate
+    h <- unname(params["h"]) ## half-saturation constant
+
+    ## set RNG seed
+    set.seed(seed)
+    ## initialize
+    times <- seq(0,tmax,by=dt)
+    t <- 0 ## current time
+    ## storage for time series; at each timestep, record the system state and the traits of every individual in the population
+    stateoutput <- vector("list", length(times))
+    traitoutput <- vector("list", length(times))
+
+    ## initial system and trait state
+    currentstate <- initialstate
+    ## draw initial trait distribution from lognormal with meanlog and sdlog given by traitmean and traitcv
+    currenttrait <- pick_individuals(initialstate["I"], traitmean, traitsd=traitmean*traitcv)
+
+    ## record the initial system and trait states
+    stateoutput[[1]] <- currentstate
+    traitoutput[[1]] <- currenttrait
+
+    i <- 1 ## how many things in the output file?
+    while (t < tmax) {
+        if (report) {
+            print(t)
+            print(mean(currenttrait))
+        }
+        if (length(currenttrait) > 0) { ## as long as the evolving population size is > 0, pick an individual
+            ind <- sample(1:length(currenttrait),1)
+            trait <- currenttrait[ind]
+            S <- currentstate["S"]
+            I <- currentstate["I"]
+            ## set up rates for each possible event
+            birth <- b*(S+I) ## susceptible birth
+            infect <- B0*trait/(h+trait)*S*I ## transmission
+            Sdeath <- m*S ## susceptible death
+            Ideath <- (m+trait)*I ## infected death
+
+            ## wheel of fortune
+            events <- c(birth,Sdeath,infect,Ideath)
+            wheel <- cumsum(events)/sum(events)
+            ## which event happens?
+            event <- min(which(runif(1) < wheel))
+
+            if (event==1) ## susceptible birth
+                currentstate["S"] <- currentstate["S"]+1
+            else if (event==2) ## susceptible death
+                currentstate["S"] <- currentstate["S"]-1
+            else if (event==3) {## new infection
+                ## the newly infected individual will have a virulence phenotype that is "inherited" from the infected individual who caused the infection
+                ## compute the trait of the offspring
+                ## offspring trait distribution mean
+                trait_parent <- (1-h2)*mean(currenttrait) + h2*trait
+                off_std <- sqrt(1-h2^2)*((1-h2)*sd(traitoutput[[1]])+h2*sd(currenttrait))
+                newtrait <- pick_individuals(1, trait_parent, off_std)
+                ## add this individual to the current trait and current state
+                currenttrait <- c(currenttrait, newtrait)
+                currentstate["S"] <- currentstate["S"]-1
+                currentstate["I"] <- currentstate["I"]+1
+            }
+            else { ## infected death
+                currenttrait <- currenttrait[-ind]
+                currentstate["I"] <- currentstate["I"]-1
+            }
+
+            ## advance time
+            t <- t + exp(-1/sum(events))/sum(events)
+
+            ## record in the output if necessary
+            if (t > times[i+1]) {## if time has passed the next recording time
+                stateoutput[[i+1]] <- currentstate ## record the system state
+                traitoutput[[i+1]] <- currenttrait
+                i <- i + 1 ## advance to the next timestep
+            }
+        }
+        else break
+    }
+    return(list(states=stateoutput, traits=traitoutput))
+}
+
+
+
+## choose some parameters that produce a reasonable-sized biological equilibrium for S+I (too large and the stochastic simulation gets ridiculously slow)
+## the s eco-evo equilibrium is (sqrt(h)+sqrt(m))^2/B0
+## the i eco-evo equilibrium is (sqrt(h)+sqrt(m))^2*(b-m)/B0/(-b+sqrt(h)*sqrt(m)+m)
+## the v evolutionary equilibrium is v = sqrt(h*m)
+## the prevalence at equilibrium is (b-m)/sqrt(h*m)
+## a feasible equilibrium requires h > (b-m)^2/m
+
+params = c(b = 2, m = 1.6, B0 = 0.1, h = 0.5)
+initialstate = c(S = 50, I = 10)
+traitmean = 0.3
+traitcv = 0.2
+seed <- 1234
+tmax <- 100
+dt <- 0.1
+h2 <- 0.85
+
+## for these parameters
+with(as.data.frame(t(params)), c((sqrt(h)+sqrt(m))^2/B0, (sqrt(h)+sqrt(m))^2*(b-m)/B0/(-b+sqrt(h)*sqrt(m)+m),  sqrt(h*m)))
+
+out <- sir_GEM(seed, tmax=15, dt=0.1, initialstate, traitmean, traitcv, h2, params)
+plot(unlist(lapply(out$traits, mean)))
+
+
+## v is not evolving - what should the equilibrium be, given that v is stuck?
+## equilibrium is not even feasible...
+## I assume the issue is that if v starts too far away from where it needs to end up, the system can totally crash
+with(as.data.frame(t(c(params,v=mean(out$traits[[length(out$traits)]])))), c((h+v)*(v+m)/v/B0, (h+v)*(b-m)*(v+m)/v/B0/(-b+v+m)))
+
+
+## start with a parasite that's a bit closer to the "right" virulence
+params = c(b = 2, m = 1.6, B0 = 0.1, h = 0.5)
+initialstate = c(S = 40, I = 20)
+traitmean = 0.55
+traitcv = 0.11
+seed <- 1234
+tmax <- 100
+dt <- 0.1
+h2 <- 0.85
+
+
+out <- sir_GEM(seed, tmax=25, dt=0.1, initialstate, traitmean, traitcv, h2, params)
+plot(unlist(lapply(out$traits, mean)))
+
+
+
+## start with a parasite that's a bit closer to the "right" virulence
+params = c(b = 20, m = 16, B0 = 0.1, h = 5)
+initialstate = c(S = 500, I = 20)
+traitmean = 1
+traitcv = 0.2
+seed <- 1234
+tmax <- 100
+dt <- 0.1
+h2 <- 0.85
+
+
+out <- sir_GEM(seed, tmax=25, dt=0.1, initialstate, traitmean, traitcv, h2, params)
+plot(unlist(lapply(out$traits, mean)))
+
+## no evolution - then what?
+## This looks like its working.
+params = c(b = 2, m = 1.6, B0 = 0.1, h = 0.5)
+initialstate = c(S = 40, I = 40)
+traitmean = 0.5
+traitcv = 0
+seed <- 1234
+tmax <- 100
+dt <- 0.1
+h2 <- 0.85
+
+## for these parameters
+with(as.data.frame(t(c(params,v=0.5))), c((h+v)*(v+m)/v/B0, (h+v)*(b-m)*(v+m)/v/B0/(-b+v+m)))
+
+
+seeds <- floor(runif(40, 1, 1000000))
+mclapply(seeds,
+         function(s) sir_GEM(s, tmax=200, dt=0.1, initialstate, traitmean, traitcv, h2, params),
+         mc.cores=14
+         ) -> out
+
+## extract population dynamics of infected individuals from each
+lapply(out,
+       function(o)
+           if (length(o[[1]])==2001) {
+               lapply(o[[1]],
+                      function(w) w[2])
+           }
+       ) %>% unlist %>%
+           matrix(.,nrow=2001) %>%
+               as.data.frame -> infs
+
+lapply(out,
+       function(o)
+           if (length(o[[1]])==2001) {
+               lapply(o[[1]],
+                      function(w) w[1])
+           }
+       ) %>% unlist %>%
+           matrix(.,nrow=2001) %>%
+               as.data.frame -> suscs
+
+## these look to be in good agreement with the analytical expectation of S=38, I=168
+apply(infs,1,mean)
+apply(suscs,1,mean)
+
+
+## this suggests that the problem is more with the initial conditions/stochasticity that prevents them from adapting
+## Let's pick some different parameters that produce a much larger equilibrium for hosts and a more moderate equilibrium for the virulence
+params = c(b = 2, m = 1.7, B0 = 0.05, h = 0.1)
+initialstate = c(S = 150, I = 50)
+traitmean = 0.3
+traitcv = 0.2
+seed <- 1234
+tmax <- 100
+dt <- 0.1
+h2 <- 0.85
+
+## for these parameters
+with(as.data.frame(t(params)), c((sqrt(h)+sqrt(m))^2/B0, (sqrt(h)+sqrt(m))^2*(b-m)/B0/(-b+sqrt(h)*sqrt(m)+m),  sqrt(h*m)))
+
+out <- sir_GEM(seed, tmax=50, dt=0.1, initialstate, traitmean, traitcv, h2, params)
+
+## trait is not moving, so what should the ecological equilibrium be?
+## susceptible population is *infinite*
+## maybe this is the problem... the ecological equilibrium that the population is running off to, given the initial trait value, is infinite; as the population chases that ecological equilibrium perhaps the evolutionary equilibrium doesn't move quickly enough to keep up?
+with(as.data.frame(t(c(params,v=0.3))), c((h+v)*(v+m)/v/B0, (h+v)*(b-m)*(v+m)/v/B0/(-b+v+m)))
+
+## what if I change the initial?
+with(as.data.frame(t(c(params,v=0.35))), c((h+v)*(v+m)/v/B0, (h+v)*(b-m)*(v+m)/v/B0/(-b+v+m)))
+traitmean = 0.35
+out <- sir_GEM(seed, tmax=50, dt=0.1, initialstate, traitmean, traitcv, h2, params)
+
+
+## need the QG comparison, I think
+## quantitative genetics model (here assuming an accelerating trade-off that will produce an ESS
+qg_model <- function(t, y, pars) {
+    b <- pars["b"]
+    m <- pars["m"]
+    B0 <- pars["B0"]
+    h <- pars["h"]
+    V <- pars["V"]
+
+    S <- y[1]
+    I <- y[2]
+    v <- y[3]
+    beta <- B0*v/(h+v)
+    dSdt <- b*(S+I) - beta*S*I - m*S
+    dIdt <- beta*S*I - (m+v)*I
+    dvdt <- V * (B0*h*S/((h+v)^2) - 1)
+    list(c(dSdt, dIdt, dvdt))
+}
+library(deSolve)
+params0 = c(b = 2, m = 1.7, B0 = 0.05, h = 0.1, V=0.001)
+out0 <- ode(y = c(S=150, I=50, v=0.3), times=seq(0, 250, 0.1), func=qg_model, parms=params0)
+## okay! QG model suggests that evolution could be pretty slow, depending on how much variation there is
+plot(out0[,c(1,4)], type='l')
+
+## but for a more reasonable V value, it sprints right there. So the question is, how much variation is there actually at the beginning of things?
+params0 = c(b = 2, m = 1.7, B0 = 0.05, h = 0.1, V=0.1)
+out0 <- ode(y = c(S=150, I=50, v=0.3), times=seq(0, 250, 0.1), func=qg_model, parms=params0)
+plot(out0[,c(1,4)], type='l')
+
+## what happens if you keep virulence fixed at the original? The system blows up. So the issue here is indeed with the model itself. Since there is no form of density-dependence other than the parasite, if the parasite is not virulent enough, the infected population grows exponentially and the susceptible population approaches zero, which would cause virulence evolution to slow.
+## what is the TEA in this case?
+## the v TEA is sqrt(h*B0*S)-h = sqrt(0.1*0.05*53)-0.1 = 0.4147 - so the system should still be moving away from v = 0.35 (the initial condition)
+params0 = c(b = 2, m = 1.7, B0 = 0.05, h = 0.1, V=0)
+out0 <- ode(y = c(S=150, I=50, v=0.3), times=seq(0, 250, 0.1), func=qg_model, parms=params0)
+plot(out0[,c(1,3)], type='l', ylab="No. infected")
+plot(out0[,c(1,2)], type='l', ylab="No. susceptible")
+
+params = c(b = 2, m = 1.7, B0 = 0.05, h = 0.1)
+initialstate = c(S = 150, I = 50)
+traitmean = 0.3
+traitcv = 0.2
+seed <- 1234
+tmax <- 100
+dt <- 0.1
+h2 <- 0.85
+## but we see no evolution at all
+out <- sir_GEM(seed, tmax=50, dt=0.1, initialstate, traitmean, traitcv, h2, params)
+## what's going on with the variability among individuals in the population?
+lapply(out$traits, var) %>% unlist %>% plot(., type='l')
+## aha. Variability is WAY TOO LOW, even at the initial time point. This is a big reason why the system isn't evolving
+set.seed(1234)
+pick_individuals(50, 0.35, 0.35*0.2) %>% var
+
+## let's ramp that CV up a ton
+out <- sir_GEM(seed, tmax=50, dt=0.1, initialstate=c(S=150,I=50), traitmean=0.3, traitcv=0.8, h2=0.85, params=c(b = 2, m = 1.7, B0 = 0.05, h = 0.1))
+lapply(out$traits, var) %>% unlist %>% plot(., type='l')
+plot(unlist(lapply(out$traits, mean)))
+
+## I'm confused: as you ramp up the CV, the mean of the trait distribution goes down to something quite a lot smaller than the initial trait mean
+pick_individuals(50, 0.35, 0.35*0.2) %>% mean
+pick_individuals(50, 0.35, 0.35*0.5) %>% mean
+pick_individuals(50, 0.35, 0.35*0.8) %>% mean
+
+## okay, let's start a bit higher
+pick_individuals(50, 0.4, 0.4*0.8) %>% mean
+sirout <- sir_GEM(seed, tmax=50, dt=0.1, initialstate=c(S=150,I=50), traitmean=0.4, traitcv=0.8, h2=0.85, params=c(b = 2, m = 1.7, B0 = 0.05, h = 0.1))
+par(mfrow=c(2,2))
+lapply(sirout$states, function(x) x[1]) %>% unlist %>% plot(., type='l', ylab="Susc abund")
+lapply(sirout$states, function(x) x[2]) %>% unlist %>% plot(., type='l', ylab="Inf abund")
+lapply(sirout$traits, median) %>% unlist %>% plot(., type='l', ylab="Median trait")
+lapply(sirout$traits, var) %>% unlist %>% plot(., type='l', ylab="Var trait")
+
+## virulence wanders away from the optimum, even as the population size blows up. This is not an issue of stochasticity keeping the population size away from the equilibrium, because both the ESS and the TEA are really far from where the trait is actually going. Basically, it's just drifting because the variation depletes too fast.
+## I think the trait variation equation is just wrong. It doesn't work.
+
+## Figured it out! Hopefully.
+## the pick_individuals fucntion was wrong
+pick_individuals <- function(N0, traitmean, traitsd) {
+    mu <- log(traitmean^2 / sqrt((traitsd)^2+traitmean^2))
+    sigma <- sqrt(log(traitsd^2/traitmean^2 + 1))
+    ## record this initial distribution in the output
+    return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+qg_sir_model <- function(t, y, pars) {
+    b <- pars["b"]
+    m <- pars["m"]
+    B0 <- pars["B0"]
+    h <- pars["h"]
+    V <- pars["V"]
+
+    S <- y[1]
+    I <- y[2]
+    v <- y[3]
+    beta <- B0*v/(h+v)
+    dSdt <- b*(S+I) - beta*S*I - m*S
+    dIdt <- beta*S*I - (m+v)*I
+    dvdt <- V * (B0*h*S/((h+v)^2) - 1)
+    list(c(dSdt, dIdt, dvdt))
+}
+library(deSolve)
+
+## Compare the SIR GEM to the QG model
+sirout <- sir_GEM(seed, tmax=200, dt=0.1, initialstate=c(S=100,I=50), traitmean=0.3, traitcv=0.2, h2=0.85, params=c(b = 2, m = 1.7, B0 = 0.05, h = 0.1))
+
+out0 <- ode(y = c(S=150, I=50, v=0.3), times=seq(0, 200, 0.1), func=qg_sir_model, parms=c(b = 2, m = 1.7, B0 = 0.05, h = 0.1, V=0.001))
+
+par(mfrow=c(2,2))
+lapply(sirout$states, function(x) x[1]) %>% unlist %>% plot(., type='l', ylab="Susc abund")
+lines(out0[,2], col=2)
+lapply(sirout$states, function(x) x[2]) %>% unlist %>% plot(., type='l', ylab="Inf abund")
+lines(out0[,3], col=2)
+lapply(sirout$traits, median) %>% unlist %>% plot(., type='l', ylab="Median trait")
+lines(out0[,4], col=2)
+lapply(sirout$traits, var) %>% unlist %>% plot(., type='l', ylab="Var trait")
+
+
+## Okay, now that model is running better, let's simulate the GEM
+## All of the following parameter sets lead to 2000 hosts at equilibrium, but they vary in the prevalence of infection.
+## at m = 4.9, S=1960 and I=40
+## at m = 2, S=1000 and I=1000
+## at m = 0.1, S=40 and I=1960
+seeds <- runif(40, 1, 1e6) %>% lower
+params <- c(K= 2000, a0=0.000125, e=5, m=4.9, d=1)

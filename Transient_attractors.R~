@@ -1,0 +1,109 @@
+source("logistic_GEM.R")
+library(tidyverse)
+library(magrittr)
+library(deSolve)
+
+dt <- 0.1
+N0 <- 20
+bs <- 0.005
+ds <- 0.005
+slope <- 1/10
+traitmean <- 2 ## initial mean of trait distribution
+tmax <- 100
+traitcv <- 0.3
+h2 <- 0.85
+
+set.seed(123431234)
+seeds <- floor(runif(20, 1, 1e5))
+lapply(seeds,
+       function(s) logistic_GEM(s, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope)) -> out
+
+lapply(1:length(out),
+       function(i) {
+           o1 <- out[[i]]
+           data.frame(time=o1$time,
+                      N=lapply(o1$traits, length) %>% unlist,
+                      med_b=lapply(o1$traits, median) %>% unlist,
+                      var_b=lapply(o1$traits, var) %>% unlist,
+                      rep=i,
+                      cv=traitcv,
+                      h2=h2
+                      )
+       }
+       ) %>% do.call(rbind.data.frame,.) -> out2
+
+sapply(seq(0, 99.9, 0.1),
+       function(t)
+           subset(out2, time>=t & time<(t+0.1)) %>% apply(., 2, mean)
+       ) %>% t %>% as.data.frame -> out3
+
+qg_model <- function(t, y, pars) {
+    bs <- pars["bs"]
+    ds <- pars["ds"]
+    slope <- pars["slope"]
+    V <- pars["V"]
+
+    N <- y[1]
+    b <- y[2]
+    d <- slope*b^2
+    dNdt <- (b-bs*N)*N-(d+ds*N)*N
+    dbdt <- V*(1-2*b*slope)
+    list(c(dNdt,dbdt))
+}
+
+qg_model_2 <- function(t, y, pars) {
+    bs <- pars["bs"]
+    ds <- pars["ds"]
+    slope <- pars["slope"]
+    V <- pars["V"]
+
+    N <- y[1]
+    b <- y[2]
+    d <- slope*b^2
+    dNdt <- (b-bs*N)*N-(d+ds*N)*N
+    dbdt <- V*(1/(d+ds*N)*(1-(2*slope*b*(b-bs*N))/(d+ds*N)))
+    list(c(dNdt,dbdt))
+}
+
+deter <- lsoda(y=c(N=N0, b=traitmean), times=seq(0,tmax,dt), func=qg_model, parms=c(bs=bs, ds=ds, slope=slope, V=(traitcv*traitmean)^2*h2)) %>% as.data.frame
+
+deter2 <- lsoda(y=c(N=N0, b=traitmean), times=seq(0,tmax,dt), func=qg_model_2, parms=c(bs=bs, ds=ds, slope=slope, V=(traitcv*traitmean)^2*h2)) %>% as.data.frame
+
+
+## Plot
+par(mfrow=c(1,3), mar=c(4,4,0.5,0.5), oma=rep(0.5,4))
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$N))
+axis(1)
+axis(2)
+box('plot')
+for (i in 1:20)
+    with(subset(out2, rep==i), lines(time, N, col=gray(0.8)))
+lines(out3$time, out3$N, lwd=2)
+with(deter, lines(time, N, lwd=2, lty=2, col='red'))
+with(deter2, lines(time, N, lwd=2, lty=2, col='blue'))
+
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+axis(1)
+axis(2)
+box('plot')
+for (i in 1:20)
+    with(subset(out2, rep==i), lines(time, med_b, col=gray(0.8)))
+lines(out3$time, out3$med_b, lwd=2)
+with(deter, lines(time, b, lwd=2, lty=2, col='red'))
+with(deter2, lines(time, b, lwd=2, lty=2, col='blue'))
+
+
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+axis(1)
+axis(2)
+box('plot')
+for (i in 1:20)
+    with(subset(out2, rep==i), lines(time, var_b, col=gray(0.8)))
+lines(out3$time, out3$var_b, lwd=2)
+abline(h=(traitcv*traitmean)^2*h2, lwd=2, col='red')
+abline(h=(traitcv*traitmean)^2*h2, lwd=2, lty=2, col='blue')
+
+

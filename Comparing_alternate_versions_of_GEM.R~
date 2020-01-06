@@ -1,0 +1,37 @@
+library(magrittr)
+library(deSolve)
+library(parallel)
+library(pryr)
+
+source("logistic_GEM.R")
+
+dt <- 0.1 ## size of time steps
+N0 <- 20 ## initial population size
+traitmean <- 1.8 ## initial mean of trait distribution
+traitcv <- 0.3 ## initial coefficient of variation of trait distribution
+h2 <- 0.75 ## heritability
+## logistic equation parameters
+bs <- 0.005
+ds <- 0.005
+slope <- 1/6
+tmax <- 100
+
+## start with a straight comparison
+sims <- vector(mode='list', length=3)
+set.seed(1234897)
+nreps <- 40
+seeds <- floor(runif(nreps, 1, 100000))
+mclapply(seeds,
+         function(seed)
+             logistic_GEM(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+         mc.cores=min(nreps,12)) -> sims[[i]]
+mclapply(seeds,
+         function(seed)
+             logistic_GEM2(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+         mc.cores=min(nreps,12)) -> sims[[i]]
+mclapply(seeds,
+         function(seed)
+             logistic_GEM3(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+         mc.cores=min(nreps,12)) -> sims[[i]]
+
+

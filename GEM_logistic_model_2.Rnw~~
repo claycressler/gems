@@ -1,0 +1,1216 @@
+\documentclass[12pt,reqno,final,pdftex]{amsart}
+%% DO NOT DELETE OR CHANGE THE FOLLOWING TWO LINES!
+%% $Revision$
+%% $Date$
+\usepackage[round,sort,elide]{natbib}
+\usepackage{graphicx}
+\usepackage{times}
+\usepackage{rotating}1
+\usepackage{subfig}
+\usepackage{color}
+\newcommand{\aak}[1]{\textcolor{cyan}{#1}}
+\newcommand{\mab}[1]{\textcolor{red}{#1}}
+\newcommand{\cec}[1]{\textcolor{blue}{#1}}
+
+\setlength{\textwidth}{6.25in}
+\setlength{\textheight}{8.75in}
+\setlength{\evensidemargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\topmargin}{-.35in}
+\setlength{\parskip}{.1in}
+\setlength{\parindent}{0.3in}
+
+%% cleveref must be last loaded package
+\usepackage[sort&compress]{cleveref}
+\newcommand{\crefrangeconjunction}{--}
+\crefname{figure}{Fig.}{Figs.}
+\Crefname{figure}{Fig.}{Figs.}
+\crefname{table}{Table}{Tables}
+\Crefname{table}{Tab.}{Tables}
+\crefname{equation}{Eq.}{Eqs.}
+\Crefname{equation}{Eq.}{Eqs.}
+\crefname{appendix}{Appendix}{Appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+\creflabelformat{equation}{#2#1#3}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}
+\newtheorem{corol}[thm]{Corollary}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{hyp}[thm]{Hypothesis}
+\newtheorem{example}[thm]{Example}
+\newtheorem{conj}[thm]{Conjecture}
+\newtheorem{algorithm}[thm]{Algorithm}
+\newtheorem{remark}{Remark}
+\renewcommand\thethm{\arabic{thm}}
+\renewcommand{\theremark}{}
+
+\numberwithin{equation}{part}
+\renewcommand\theequation{\arabic{equation}}
+\renewcommand\thesection{\arabic{section}}
+\renewcommand\thesubsection{\thesection.\arabic{subsection}}
+\renewcommand\thefigure{\arabic{figure}}
+\renewcommand\thetable{\arabic{table}}
+\renewcommand\thefootnote{\arabic{footnote}}
+
+\newcommand\scinot[2]{$#1 \times 10^{#2}$}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textsf{#1}}
+\newcommand{\dlta}[1]{{\Delta}{#1}}
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
+\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
+\newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]}
+\newcommand{\dd}[1]{\mathrm{d}{#1}}
+\newcommand{\citetpos}[1]{\citeauthor{#1}'s \citeyearpar{#1}}
+
+\begin{document}
+
+<<setup,include=FALSE,cache=F>>=
+require(knitr)
+opts_chunk$set(
+               progress=T,prompt=F,tidy=F,highlight=T,
+               warning=F,message=F,error=F,
+               results='hide',echo=F,cache=T,
+               size='scriptsize',
+               fig.path='figure/',fig.lp="fig:",
+               fig.align='left',
+               fig.show='asis',
+               fig.height=4,fig.width=6.83,
+               out.width="\\linewidth",
+               dpi=150,
+               dev=c('png','tiff'),
+               dev.args=list(
+                 png=list(bg='transparent'),
+                 tiff=list(compression='lzw')
+                 )
+               )
+
+aqscinot <- function (x, digits = 2, type = c("expression","latex")) {
+  type <- match.arg(type)
+  x <- signif(x,digits=digits)
+  ch <- floor(log10(abs(x)))
+  mn <- x/10^ch
+  switch(type,
+         expression={
+           bquote(.(mn)%*%10^.(ch))
+         },
+         latex={
+           paste0("\\scinot{",mn,"}{",ch,"}")
+         }
+         )
+}
+
+require(xtable)
+
+options(scipen=-1)
+
+options(
+        xtable.caption.placement="top",
+        xtable.include.rownames=FALSE
+        )
+
+@
+
+
+<<>>=
+
+## quantitative genetics model (here assuming an accelerating trade-off that will produce an ESS
+qg_model <- function(t, y, pars) {
+    bs <- pars["bs"]
+    ds <- pars["ds"]
+    slope <- pars["slope"]
+    V <- pars["V"]
+
+    N <- y[1]
+    b <- y[2]
+    d <- slope*b^2
+    dNdt <- (b-bs*N)*N-(d+ds*N)*N
+    dbdt <- V*(1-2*b*slope)
+    list(c(dNdt,dbdt))
+}
+
+@
+
+The first thing I want to consider is a comparison of two methods of simulating a GEM.
+The first is the classic GEM, which chooses an individual at random, uses a Monte Carlo algorithm to determine what happens to it based on the individual's traits, and then advances time a random amount based on the total rate of events for that individual.
+The second method modifies the algorithm by creating the ``wheel of fortune'' using the rates for every individual in the population, and then using the Monte Carlo algorithm to choose both an individual and an event from a single ``spin'' of the wheel.
+Obviously, time will advance much more slowly in the second model because the timestep is chosen using the code exp(-1/sum(events))/sum(events): since the second method sums across all events (births and deaths) for every individual in the population, the denominator is a very large number in the second method.
+
+Fig. \ref{fig:popSizes} shows the population dynamics for the original GEM method and the ``many-slice'' GEM, as carrying capacity changes, assuming initial conditions of $N(0) = 5$, a mean trait of 1.8, a trait CV of 0.3, and heritability of 0.75.
+You can see that the two methods are very similar.
+There are more extinctions at the lowest carrying capacity for the original GEM, but it's unclear whether this is a particular quirk of the set of 24 replicates simulations done here, or whether that's pathological.
+The many-slice GEM also appears to approach the carrying capacity faster than the original GEM (this is most obvious at the highest carrying capacity).
+
+Fig. \ref{fig:medTraits} shows the trait dynamics for both models.
+For each line, the value at any time point, is the median trait value within the population at that time.
+The black line shows the mean of these medians across the replicate simulations.
+What is striking is how little evolution happens in the many-slice model, despite the fact that the population dynamics look really similar.
+That is pretty surprising to me.
+In particular, I can calculate what the carrying capacity should be, given the mean traits for the two models.
+At the final time point the mean trait across the replicate simulations is:
+\begin{itemize}
+\item For $b_s = d_s = 0.05$, the original GEM has a mean trait of 1.89.
+\item For $b_s = d_s = 0.05$, the many-slice GEM has a mean trait of 1.68.
+\item For $b_s = d_s = 0.01$, the original GEM has a mean trait of 2.66.
+\item For $b_s = d_s = 0.01$, the many-slice GEM has a mean trait of 1.89.
+\item For $b_s = d_s = 0.005$, the original GEM has a mean trait of 2.59.
+\item For $b_s = d_s = 0.005$, the many-slice GEM has a mean trait of 2.09.
+\item For $b_s = d_s = 0.002$, the original GEM has a mean trait of 2.65.
+\item For $b_s = d_s = 0.002$, the many-slice GEM has a mean trait of 2.05.
+\end{itemize}
+
+For this logistic growth model, the carrying capacity is given by $\hat{N} = (b-d)/(b_s+d_s)$, where $b$ is the host trait and $d$ is given by $b^2/6$.
+Given the trait values above, we can compute the expected population size, given the model, and compare that to the observed population size:
+\begin{itemize}
+\item For $b_s = d_s = 0.05$, the original GEM predicts a carrying capacity of 12.95, and the observed carrying capacity is 10.6.
+\item For $b_s = d_s = 0.05$, the many-slice GEM predicts a carrying capacity of 12.1, and the observed carrying capacity is 10.3.
+\item For $b_s = d_s = 0.01$, the original GEM predicts a carrying capacity of 74.04, and the observed carrying capacity is 66.2.
+\item For $b_s = d_s = 0.01$, the many-slice GEM predicts a carrying capacity of 64.73, and the observed carrying capacity is 59.3.
+\item For $b_s = d_s = 0.005$, the original GEM predicts a carrying capacity of 146.92, and the observed carrying capacity is 137.
+\item For $b_s = d_s = 0.005$, the many-slice GEM predicts a carrying capacity of 136.2, and the observed carrying capacity is 132.
+\item For $b_s = d_s = 0.002$, the original GEM predicts a carrying capacity of 369.9, and the observed carrying capacity is 360.
+\item For $b_s = d_s = 0.002$, the many-slice GEM predicts a carrying capacity of 337.4, and the observed carrying capacity is 325.
+\end{itemize}
+Okay, that's good confirmation - there are slight differences between the two methods in carrying capacity, that can largely be explained by the differences in trait dynamics.
+
+Fig. \ref{fig:varTraits} shows the variance in traits through time for both models.
+The trajectories look really similar here.
+
+\textbf{The main take-away here is that the original GEM seems to do a better job than the many-slice GEM.}
+Somehow, the many-slice GEM somehow does not yield a fitness advantage to individuals with traits nearer the optimum predicted by adaptive dynamics and quantitative genetics.
+
+<<popSizes, fig.height=6, units='in', res=300, fig.cap="Population and trait dynamics for the original GEM. The black line shows the mean population size across the replicate simulations at each time point. The red line shows the QG model expectation.">>=
+
+library(magrittr)
+library(deSolve)
+library(parallel)
+library(pryr)
+
+## if running in parallel, create a function that calls logistic_GEM independently so that everything is loaded properly on each core
+call_logistic_GEM <- function(nreps, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope, version='original') {
+    source("/Users/claycressler/Box Sync/Research/John DeLong/logistic_GEM.R")
+    set.seed(1001)
+    seeds <- floor(runif(nreps, 1, 100000))
+    ## "stupidly parallel" way of generating replicate simulations
+    if (version=="original")
+        mclapply(seeds,
+                 function(seed) logistic_GEM(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+                 mc.cores=min(nreps,12)
+                 ) -> sims
+    else if (version=="many-slice")
+        mclapply(seeds,
+                 function(seed) logistic_GEM2(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+                 mc.cores=min(nreps,12)
+                 ) -> sims
+    return(sims)
+}
+
+## low variation
+## initialization
+dt <- 0.1 ## size of time steps
+N0 <- 5 ## initial population size
+traitmean <- 1.8 ## initial mean of trait distribution
+traitcv <- 0.3 ## initial coefficient of variation of trait distribution
+h2 <- 0.75 ## heritability
+
+## logistic equation parameters
+bs <- c(0.05, 0.01, 0.005, 0.002)
+ds <- c(0.05, 0.01, 0.005, 0.002)
+slope <- 1/6
+tmax <- 60
+
+system.time(x <- call_logistic_GEM(5, 0.1, tmax, N0, traitmean, traitcv, h2, 0.01, 0.01, slope))
+system.time(y <- call_logistic_GEM(5, 0.01, tmax, N0, traitmean, traitcv, h2, 0.01, 0.01, slope))
+
+## these are basically indistinguishable
+#plot(x[[1]][[1]], lapply(x[[1]][[2]], length), type='l')
+#lines(y[[1]][[1]], lapply(y[[1]][[2]], length), col=2)
+
+#system.time(x <- call_logistic_GEM(5, 0.1, tmax, N0, traitmean, traitcv, h2, 0.01, 0.01, slope))
+#system.time(y <- call_logistic_GEM(10, 0.1, tmax, N0, traitmean, traitcv, h2, 0.01, 0.01, slope))
+
+#system.time(z <- call_logistic_GEM(5, 0.1, tmax, N0, traitmean, traitcv, h2, 0.001, 0.001, slope))
+
+if (!file.exists("testing_stochasticity_effect.RDS")) {
+    methodset_sims <- vector(mode='list', length=2)
+    parset_sims1 <- parset_sims2 <- vector(mode='list', length=length(bs))
+    for (p in 1:length(bs)) {
+        print(paste('bs =', bs[p]))
+        parset_sims1[[p]] <- call_logistic_GEM(nreps=24, dt=0.1, tmax=40, N0=5, traitmean=1.8, traitcv=0.3, h2=0.75, bs=bs[p], ds=ds[p], slope=1/6, version='original')
+        parset_sims2[[p]] <- call_logistic_GEM(nreps=24, dt=0.1, tmax=40, N0=5, traitmean=1.8, traitcv=0.3, h2=0.75, bs=bs[p], ds=ds[p], slope=1/6, version='many-slice')
+    }
+    methodset_sims[[1]] <- parset_sims1
+    methodset_sims[[2]] <- parset_sims2
+    saveRDS(methodset_sims, file="/Users/claycressler/testing_stochasticity_effect.RDS")
+} else  methodset_sims <- readRDS("testing_stochasticity_effect.RDS")
+
+## population sizes by parameter set and simulation method
+lapply(1:length(methodset_sims),
+       function(m) {
+           m1 <- methodset_sims[[m]]
+           lapply(1:length(m1),
+                  function(p) {
+                      lapply(1:length(m1[[p]]),
+                             function(i) {
+                                 rep <- m1[[p]][[i]]
+                                 data.frame(time=floor(rep$time/dt)*dt,
+                                            size=lapply(rep$traits, length) %>% unlist,
+                                            rep=rep(i, length(rep$time)),
+                                            bsds=rep(bs[p], length(rep$time)),
+                                            version=c('original','many-slice')[m]
+                                            )
+                             }
+                             ) %>% do.call(rbind.data.frame, .)
+                  }
+                  ) %>% do.call(rbind.data.frame, .)
+       }
+       ) %>% do.call(rbind.data.frame, .) -> popSizes
+
+                                        #
+## compute mean population size trajectories
+popSizes %>%
+    group_by(bsds, version, time) %>%
+        summarise(size=mean(size)) -> meanPopSizes
+
+## compute the qg expectations for each parameter set
+qg_model <- function(t, y, pars) {
+    bs <- pars["bs"]
+    ds <- pars["ds"]
+    slope <- pars["slope"]
+    V <- pars["V"]
+
+    N <- y[1]
+    b <- y[2]
+    d <- slope*b^2
+    dNdt <- (b-bs*N)*N-(d+ds*N)*N
+    dbdt <- V*(1-2*b*slope)
+    list(c(dNdt,dbdt))
+}
+
+lapply(1:4,
+       function(p)
+           lsoda(y=c(size=N0,trait=traitmean),
+                 times=seq(0,40,dt),
+                 func=qg_model,
+                 parms=c(bs=bs[p], ds=ds[p], slope=slope, V=(traitmean*traitcv)^2)) %>%
+                     as.data.frame %>% mutate(., bsds=bs[p])
+       ) %>% do.call(rbind.data.frame, .) -> qg
+
+## plot the individual replicate trajectories and the mean
+ggplot(popSizes, aes(time, size)) +
+    geom_line(color='gray', aes(group=rep)) +
+        geom_line(data=meanPopSizes, aes(time, size)) +
+            geom_line(data=qg, aes(time, size), color='red') +
+                facet_grid(bsds~version, scales="free") +
+                    theme_bw()
+
+@
+
+<<medianTraits, fig.height=6, units='in', res=300, fig.cap="Dynamics for the median trait in both the original and many-slice GEMs. The black line shows the mean of the medians across each replicate simulation. The red line shows the QG expectation.">>=
+
+## population sizes by parameter set and simulation method
+lapply(1:length(methodset_sims),
+       function(m) {
+           m1 <- methodset_sims[[m]]
+           lapply(1:length(m1),
+                  function(p) {
+                      lapply(1:length(m1[[p]]),
+                             function(i) {
+                                 rep <- m1[[p]][[i]]
+                                 data.frame(time=floor(rep$time/dt)*dt,
+                                            trait=lapply(rep$traits, median) %>% unlist,
+                                            rep=rep(i, length(rep$time)),
+                                            bsds=rep(bs[p], length(rep$time)),
+                                            version=c('original','many-slice')[m]
+                                            )
+                             }
+                             ) %>% do.call(rbind.data.frame, .)
+                  }
+                  ) %>% do.call(rbind.data.frame, .)
+       }
+       ) %>% do.call(rbind.data.frame, .) -> medTraits
+                                        #
+## compute mean trait trajectories
+medTraits %>%
+    group_by(bsds, version, time) %>%
+        summarise(trait=mean(trait)) -> meanMedTraits
+
+## plot the individual replicate trajectories and the mean
+ggplot(medTraits, aes(time, trait)) +
+    geom_line(color='gray', aes(group=rep)) +
+        geom_line(data=meanMedTraits, aes(time, trait)) +
+            geom_line(data=qg, aes(time, trait), color='red') +
+                facet_grid(bsds~version, scales="free") +
+                    theme_bw()
+
+
+@
+
+<<varTraits, fig.height=6, units='in', res=300, fig.cap="Dynamics for the trait variance in both the original and many-slice GEMs. The black line shows the mean of the variances across each replicate simulation.">>=
+
+## population sizes by parameter set and simulation method
+lapply(1:length(methodset_sims),
+       function(m) {
+           m1 <- methodset_sims[[m]]
+           lapply(1:length(m1),
+                  function(p) {
+                      lapply(1:length(m1[[p]]),
+                             function(i) {
+                                 rep <- m1[[p]][[i]]
+                                 data.frame(time=floor(rep$time/dt)*dt,
+                                            trait=lapply(rep$traits, var) %>% unlist,
+                                            rep=rep(i, length(rep$time)),
+                                            bsds=rep(bs[p], length(rep$time)),
+                                            version=c('original','many-slice')[m]
+                                            )
+                             }
+                             ) %>% do.call(rbind.data.frame, .)
+                  }
+                  ) %>% do.call(rbind.data.frame, .)
+       }
+       ) %>% do.call(rbind.data.frame, .) -> varTraits
+                                        #
+## compute mean trait trajectories
+varTraits %>%
+    group_by(bsds, version, time) %>%
+        summarise(trait=mean(trait)) -> meanVarTraits
+
+## plot the individual replicate trajectories and the mean
+ggplot(varTraits, aes(time, trait)) +
+    geom_line(color='gray', aes(group=rep)) +
+        geom_line(data=meanVarTraits, aes(time, trait)) +
+                facet_grid(bsds~version, scales="free") +
+                    theme_bw()
+
+
+@
+
+
+<<eval=FALSE>>=
+
+## meanTraits, fig.height=6, units='in', res=300, fig.cap="Dynamics for the mean trait in both the original and many-slice GEMs. The black line shows the mean of the means across each replicate simulation.">>=
+
+## population sizes by parameter set and simulation method
+lapply(1:length(methodset_sims),
+       function(m) {
+           m1 <- methodset_sims[[m]]
+           lapply(1:length(m1),
+                  function(p) {
+                      lapply(1:length(m1[[p]]),
+                             function(i) {
+                                 rep <- m1[[p]][[i]]
+                                 data.frame(time=floor(rep$time/dt)*dt,
+                                            trait=lapply(rep$traits, mean) %>% unlist,
+                                            rep=rep(i, length(rep$time)),
+                                            bsds=rep(bs[p], length(rep$time)),
+                                            version=c('original','many-slice')[m]
+                                            )
+                             }
+                             ) %>% do.call(rbind.data.frame, .)
+                  }
+                  ) %>% do.call(rbind.data.frame, .)
+       }
+       ) %>% do.call(rbind.data.frame, .) -> meanTraits
+                                        #
+## compute mean trait trajectories
+medTraits %>%
+    group_by(bsds, version, time) %>%
+        summarise(trait=mean(trait)) -> meanMeanTraits
+
+## plot the individual replicate trajectories and the mean
+ggplot(medTraits, aes(time, trait)) +
+    geom_line(color='gray', aes(group=rep)) +
+        geom_line(data=meanMeanTraits, aes(time, trait)) +
+            facet_grid(bsds~version, scales="free") +
+                theme_bw()
+
+
+@
+
+\newpage
+
+Given that the original GEM seems to be working nicely, I want to explore it a bit more to investigate the roles of various things in driving the ecological and evolutionary dynamics.
+
+
+<<eval=FALSE>>=
+
+## One obvious thing to do is to calculate the expected rates of both population growth and trait dynamics (using the QG model to generate the expectation), and then ask what the relationship is between those and the realized rates in the different circumstances.
+
+library(tidyverse)
+library(magrittr)
+library(deSolve)
+library(parallel)
+
+## if running in parallel, create a function that calls logistic_GEM independently so that everything is loaded properly on each core
+call_logistic_GEM <- function(nreps, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope, version='original') {
+    source("/Users/claycressler/Box Sync/Research/John DeLong/logistic_GEM.R")
+    set.seed(1001)
+    seeds <- floor(runif(nreps, 1, 100000))
+    ## "stupidly parallel" way of generating replicate simulations
+    if (version=="original")
+        mclapply(seeds,
+                 function(seed) logistic_GEM(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+                 mc.cores=min(nreps,12)
+                 ) -> sims
+    else if (version=="many-slice")
+        mclapply(seeds,
+                 function(seed) logistic_GEM2(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+                 mc.cores=min(nreps,12)
+                 ) -> sims
+    return(sims)
+}
+
+## initialization. For this set of parameters, the simulation will get pretty close to both the expected population size and expected trait
+dt <- 0.1 ## size of time steps
+N0 <- 5 ## initial population size
+traitmean <- 1.2 ## initial mean of trait distribution
+traitcv <- 0.3 ## initial coefficient of variation of trait distribution
+h2 <- 0.75 ## heritability
+slope <- 1/6
+tmax <- 80
+nreps <- 50
+bs <- 0.005
+ds <- 0.005
+
+## what I want to do is ask, across a bunch of simulations, when the population is at different sizes, what fraction of the observed rates of change
+if (!file.exists("simulation_results_3-15-19.RDS")) {
+    set.seed(1209874)
+    seeds <- floor(runif(20, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=0.1, tmax=120, N0=5, traitmean=1.8, traitcv=0.3, h2=0.8, bs=0.005, ds=0.005, slope=1/10),
+             mc.cores=12) -> out
+    saveRDS(out, file="~/simulation_results_3-15-19.RDS")
+} else out <- readRDS("simulation_results_3-15-19.RDS")
+
+lapply(1:length(out),
+       function(i) {
+           o1 <- out[[i]]
+           data.frame(time=o1$time,
+                      N=lapply(o1$traits, length) %>% unlist,
+                      med_b=lapply(o1$traits, median) %>% unlist,
+                      var_b=lapply(o1$traits, var) %>% unlist,
+                      rep=i
+                      ) %>%
+                          mutate(.,
+                                 EdNdt=((med_b-bs*N)-(slope*med_b^2+ds*N))*N,
+                                 Edbdt=var_b*(1-2*slope*med_b),
+                                 OdNdt=sapply(1:length(o1$time), function(i) (N[i+1]-N[i])/(time[i+1]-time[i])),
+                                 Odbdt=sapply(1:length(o1$time), function(i) (med_b[i+1]-med_b[i])/(time[i+1]-time[i]))
+                                 )
+       }
+       ) %>% do.call(rbind.data.frame, .) -> out2
+mutate(out2, DdNdt=OdNdt-EdNdt, Ddbdt=Odbdt-Edbdt) -> out2
+
+ggplot(out2, aes(x=time, y=Ddbdt)) +
+    geom_point() +
+        geom_hline(yintercept=0, col='red') +
+        stat_smooth() +
+            coord_cartesian(xlim=c(0,120), ylim=c(-1, 1))
+
+ggplot(out2, aes(x=time, y=Odbdt)) +
+    geom_point()
+
+ggplot(out2, aes(x=time, y=med_b, group=rep, colour=as.factor(rep))) +
+    geom_line()
+
+
+
+@
+
+
+<<>>=
+
+## Compare how the trait dynamics change based on how close the population is to its ecological equilibrium (holding that constant and varying only the initial population size)
+if (!file.exists("simulation_results_3-18-19.RDS")) {
+    out <- vector(mode='list', length=4)
+    N0seq <- c(10, 50, 100, 200)
+    for (i in 1:4) {
+        print(i)
+        n <- N0seq[i]
+        set.seed(1209874)
+        seeds <- floor(runif(20, 1, 1e5))
+        mclapply(seeds,
+                 function(s) logistic_GEM(seed=s, dt=0.1, tmax=100, N0=n, traitmean=1.8, traitcv=0.3, h2=0.8, bs=0.005, ds=0.005, slope=1/10),
+                 mc.cores=12) -> out[[i]]
+    }
+    saveRDS(out, file="~/simulation_results_3-18-19.RDS")
+} else out <- readRDS(file="./simulation_results_3-18-19.RDS")
+
+N0seq <- c(10, 50, 100, 200)
+lapply(1:length(out),
+       function(i) {
+           o <- out[[i]]
+           lapply(1:length(o),
+                  function(j) {
+                      o1 <- o[[j]]
+                      data.frame(time=o1$time,
+                                 N=lapply(o1$traits, length) %>% unlist,
+                                 med_b=lapply(o1$traits, median) %>% unlist,
+                                 var_b=lapply(o1$traits, var) %>% unlist,
+                                 rep=j,
+                                 N0=N0seq[i]
+                                 )
+                  }
+                  ) %>% do.call(rbind.data.frame,.)
+       }
+       ) %>% do.call(rbind.data.frame,.) -> out2
+
+lapply(N0seq,
+       function(n)
+           sapply(seq(0, 99.9, 0.1),
+                  function(t)
+                      subset(out2, N0==n & time>=t & time<(t+0.1)) %>% apply(., 2, mean)
+                  ) %>% t
+       ) %>% do.call(rbind.data.frame,.) -> out3
+
+png(file="Results_varying_initial_population_size.png", width=10, height=6, units='in', res=400)
+par(mfrow=c(3,5), mar=c(1,1,0.5,0.5), oma=c(4,4,0,0))
+for (n in N0seq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$N))
+    axis(1, tick=T, labels=F)
+    if (n==N0seq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Population size")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, N0==n & rep==i), lines(time, N, col=gray(0.7)))
+    with(subset(out3, N0==n), lines(time, N, lwd=2))
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$N))
+axis(1, tick=T, labels=F)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:4) with(subset(out3, N0==N0seq[i]), lines(time, N, lwd=2, col=c("#000000","#009E73","#E69F00","#56B4E9")[i]))
+legend(x=40, y=150, c("N0=10","N0=50","N0=100","N0=200"), col=c("#000000","#009E73","#E69F00","#56B4E9"), lwd=1.5, bty='n')
+
+for (n in N0seq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+    axis(1, tick=T, labels=F)
+    if (n==N0seq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Median trait")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, N0==n & rep==i), lines(time, med_b, col=gray(0.7)))
+    with(subset(out3, N0==n), lines(time, med_b, lwd=2))
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+axis(1, tick=T, labels=F)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:4) with(subset(out3, N0==N0seq[i]), lines(time, med_b, lwd=2, col=c("#000000","#009E73","#E69F00","#56B4E9")[i]))
+
+for (n in N0seq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+    axis(1)
+    if (n==N0seq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Trait variance")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, N0==n & rep==i), lines(time, var_b, col=gray(0.7)))
+    with(subset(out3, N0==n), lines(time, var_b, lwd=2))
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+axis(1)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:4) with(subset(out3, N0==N0seq[i]), lines(time, var_b, lwd=2, col=c("#000000","#009E73","#E69F00","#56B4E9")[i]))
+mtext(side=1, line=2, outer=T, "Time")
+dev.off()
+
+
+
+
+
+
+@
+
+<<>>=
+## an alternative - hold initial population size constant (at 50) and vary how close the population's mean trait is to the optimum
+out <- vector(mode='list', length=4)
+bseq <- c(1, 2, 3, 4)
+for (i in 1:4) {
+    print(i)
+    b <- bseq[i]
+    set.seed(1209874)
+    seeds <- floor(runif(20, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=0.1, tmax=100, N0=50, traitmean=b, traitcv=0.3, h2=0.8, bs=0.005, ds=0.005, slope=1/10),
+             mc.cores=12) -> out[[i]]
+}
+saveRDS(out, file="~/simulation_results_2_3-18-19.RDS")
+
+
+## okay, make a figure here: gotta organize the results
+out <- readRDS(file="./simulation_results_2_3-18-19.RDS")
+
+lapply(1:length(out),
+       function(i) {
+           o <- out[[i]]
+           lapply(1:length(o),
+                  function(j) {
+                      o1 <- o[[j]]
+                      data.frame(time=o1$time,
+                                 N=lapply(o1$traits, length) %>% unlist,
+                                 med_b=lapply(o1$traits, median) %>% unlist,
+                                 var_b=lapply(o1$traits, var) %>% unlist,
+                                 rep=j,
+                                 b=bseq[i]
+                                 )
+                  }
+                  ) %>% do.call(rbind.data.frame,.)
+       }
+       ) %>% do.call(rbind.data.frame,.) -> out2
+
+lapply(bseq,
+       function(n)
+           sapply(seq(0, 99.9, 0.1),
+                  function(t)
+                      subset(out2, b==n & time>=t & time<(t+0.1)) %>% apply(., 2, mean)
+                  ) %>% t
+       ) %>% do.call(rbind.data.frame,.) -> out3
+
+png(file="Results_varying_initial_trait_mean.png", width=10, height=6, units='in', res=400)
+par(mfrow=c(3,5), mar=c(1,1,0.5,0.5), oma=c(4,4,0,0))
+for (n in bseq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$N))
+    axis(1, tick=T, labels=F)
+    if (n==bseq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Population size")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, b==n & rep==i), lines(time, N, col=gray(0.7)))
+    with(subset(out3, b==n), lines(time, N, lwd=2))
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$N))
+axis(1, tick=T, labels=F)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:4) with(subset(out3, b==bseq[i]), lines(time, N, lwd=2, col=c("#000000","#009E73","#E69F00","#56B4E9")[i]))
+legend(x=40, y=150, c("b(0)=1","b(0)=2","b(0)=3","b(0)=4"), col=c("#000000","#009E73","#E69F00","#56B4E9"), lwd=1.5, bty='n')
+
+for (n in bseq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+    axis(1, tick=T, labels=F)
+    if (n==bseq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Median trait")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, b==n & rep==i), lines(time, med_b, col=gray(0.7)))
+    with(subset(out3, b==n), lines(time, med_b, lwd=2))
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+axis(1, tick=T, labels=F)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:4) with(subset(out3, b==bseq[i]), lines(time, med_b, lwd=2, col=c("#000000","#009E73","#E69F00","#56B4E9")[i]))
+
+for (n in bseq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+    axis(1)
+    if (n==bseq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Trait variance")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, b==n & rep==i), lines(time, var_b, col=gray(0.7)))
+    with(subset(out3, b==n), lines(time, var_b, lwd=2))
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+axis(1)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:4) with(subset(out3, b==bseq[i]), lines(time, var_b, lwd=2, col=c("#000000","#009E73","#E69F00","#56B4E9")[i]))
+mtext(side=1, line=2, outer=T, "Time")
+dev.off()
+
+
+@
+
+
+<<>>=
+
+## let's start with something a little more biologically reasonable. Let's assume that a population is at an eco-evolutionary ESS, and the system state changes so that the eco-evolutionary equilibrium has moved. How does the distance from the old trait and population equilibrium to the new one influence how quickly the system moves?
+
+## The ESS trait is given by 1/(2*s), where s is the slope of the birth-death relationship
+## The ecological equilibrium at this ESS is 1/(4*s*(bs+ds))
+
+## Initial conditions will be given by setting the system to its eco-evolutionary equilibrium when s takes values from 0.2 to 1, but where the new system state is s = 0.1
+
+call_logistic_GEM <- function(nreps, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope, version='original') {
+    source("/Users/claycressler/Box Sync/Research/John DeLong/logistic_GEM.R")
+    set.seed(1001)
+    seeds <- floor(runif(nreps, 1, 100000))
+    ## "stupidly parallel" way of generating replicate simulations
+    mclapply(seeds,
+             function(seed) logistic_GEM(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slope),
+             mc.cores=min(nreps,12)
+             ) -> sims
+    return(sims)
+}
+
+
+out <- vector(mode='list', length=length(seq(0.2,1,0.1)))
+sseq <- seq(0.2,1,0.1)
+for (i in 2:length(out)) {
+    print(i)
+    s <- sseq[i]
+    call_logistic_GEM(nreps=20, dt=0.1, tmax=100, N0=1/(4*s*0.01), traitmean=1/(2*s), traitcv=0.3, h2=0.8, bs=0.005, ds=0.005, slope=1/10)  -> out[[i]]
+}
+saveRDS(out, file="~/simulation_results_3-20-19.RDS")
+
+
+out <- readRDS("simulation_results_3-20-19.RDS")
+
+lapply(1:length(out),
+       function(i) {
+           o <- out[[i]]
+           lapply(1:length(o),
+                  function(j) {
+                      o1 <- o[[j]]
+                      data.frame(time=o1$time,
+                                 N=lapply(o1$traits, length) %>% unlist,
+                                 med_b=lapply(o1$traits, median) %>% unlist,
+                                 var_b=lapply(o1$traits, var) %>% unlist,
+                                 rep=j,
+                                 s=sseq[i]
+                                 )
+                  }
+                  ) %>% do.call(rbind.data.frame,.)
+       }
+       ) %>% do.call(rbind.data.frame,.) -> out2
+
+## compute the means across each simulation replicate
+lapply(sseq,
+       function(n)
+           sapply(seq(0, 99.9, 0.1),
+                  function(t)
+                      subset(out2, s==n & time>=t & time<(t+0.1)) %>% apply(., 2, mean)
+                  ) %>% t
+       ) %>% do.call(rbind.data.frame,.) -> out3
+
+library(viridis)
+
+qg_model <- function(t, y, pars) {
+    bs <- pars["bs"]
+    ds <- pars["ds"]
+    slope <- pars["slope"]
+    V <- pars["V"]
+
+    N <- y[1]
+    b <- y[2]
+    d <- slope*b^2
+    dNdt <- (b-bs*N)*N-(d+ds*N)*N
+    dbdt <- V*(1-2*b*slope)
+    list(c(dNdt,dbdt))
+}
+
+
+png(file="Results_varying_initial_eco-evolutionary_equilibrium.png", width=14, height=6, units='in', res=400)
+par(mfrow=c(3,length(sseq)+1), mar=c(1,1,0.5,0.5), oma=c(4,4,0,0))
+for (n in sseq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$N))
+    axis(1, tick=T, labels=F)
+    if (n==sseq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Population size")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, s==n & rep==i), lines(time, N, col=gray(0.7)))
+    with(subset(out3, s==n), lines(time, N, lwd=2))
+
+    ## add the QG expectation
+    qg <- lsoda(y=c(N=1/(4*n*0.01),trait=1/(2*n)),
+                times=seq(0,100,0.1),
+                func=qg_model,
+                parms=c(bs=0.005,ds=0.005,slope=0.1,V=(1/(2*n)*0.3)^2))
+    lines(qg[,'time'], qg[,'N'], col=2, lwd=2)
+
+    legend(x='topleft', paste("Initial s = ", n), bty='n')
+
+
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$N))
+axis(1, tick=T, labels=F)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:length(sseq)) with(subset(out3, s==sseq[i]), lines(time, N, lwd=2, col=viridis(length(sseq))[i]))
+
+for (n in sseq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+    axis(1, tick=T, labels=F)
+    if (n==sseq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Median trait")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, s==n & rep==i), lines(time, med_b, col=gray(0.7)))
+    with(subset(out3, s==n), lines(time, med_b, lwd=2))
+
+    qg <- lsoda(y=c(N=1/(4*n*0.01),trait=1/(2*n)),
+                times=seq(0,100,0.1),
+                func=qg_model,
+                parms=c(bs=0.005,ds=0.005,slope=0.1,V=(1/(2*n)*0.3)^2))
+    lines(qg[,'time'], qg[,'trait'], col=2, lwd=2)
+ }
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$med_b))
+axis(1, tick=T, labels=F)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:length(sseq)) with(subset(out3, s==sseq[i]), lines(time, med_b, lwd=2, col=viridis(length(sseq))[i]))
+
+for (n in sseq) {
+    plot.new()
+    plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+    axis(1)
+    if (n==sseq[1]) {
+        axis(2)
+        mtext(side=2, line=3, "Trait variance")
+    }
+    else axis(2, tick=T, labels=F)
+    box(bty='L')
+    for (i in 1:20) with(subset(out2, s==n & rep==i), lines(time, var_b, col=gray(0.7)))
+    with(subset(out3, s==n), lines(time, var_b, lwd=2))
+
+    abline(h=(1/(2*n)*0.3)^2, col=2, lwd=2)
+
+}
+plot.new()
+plot.window(xlim=c(0,100), ylim=range(out2$var_b))
+axis(1)
+axis(2, tick=T, labels=F)
+box(bty='L')
+for (i in 1:length(sseq)) with(subset(out3, s==sseq[i]), lines(time, var_b, lwd=2, col=viridis(length(sseq))[i]))
+mtext(side=1, line=2, outer=T, "Time")
+dev.off()
+
+
+
+
+## then what we can do is ask, what happens if you are *not* at an eco-evolutionary equilibrium and the environment changes; e.g., compare the rates of trait evolution when you are different from the eco-evolutionary equilibrium (e.g., hold the trait constant but vary the population size either above or below the optimum for that trait, or have the trait not match with the population size.
+
+## so what I am going to do is pick three different values (s=0.2, s=0.5, s=0.8) and simulate the system when the initial is *at* its eco-evolutionary equilibrium, and when it is off of it (either because the initial population size is too large (20% larger) or too small (20% smaller), or when the initial trait is too large (20% larger) or too small (20% smaller)
+lapply(c(0.2, 0.5, 0.8),
+       function(s) matrix(c(s, 1/(4*s*0.01), 1/(2*s),
+                            s, 1.2*1/(4*s*0.01), 1/(2*s),
+                            s, 0.8*1/(4*s*0.01), 1/(2*s),
+                            s, 1/(4*s*0.01), 1.2/(2*s),
+                            s, 1.2*1/(4*s*0.01), 1.2/(2*s),
+                            s, 0.8*1/(4*s*0.01), 1.2/(2*s),
+                            s, 1/(4*s*0.01), 0.8/(2*s),
+                            s, 1.2*1/(4*s*0.01), 0.8/(2*s),
+                            s, 0.8*1/(4*s*0.01), 0.8/(2*s)),
+                          ncol=3, byrow=T) %>% as.data.frame
+       ) %>% do.call(rbind.data.frame, .) -> initials
+colnames(initials) <- c("s","N","b")
+
+out <- vector(mode='list', length=nrow(initials))
+for (i in 1:length(out)) {
+    print(i)
+    call_logistic_GEM(nreps=20, dt=0.1, tmax=100, N0=initials$N[i], traitmean=initials$b[i], traitcv=0.3, h2=0.8, bs=0.005, ds=0.005, slope=0.1)  -> out[[i]]
+}
+saveRDS(out, file="~/simulation_results_3-21-19.RDS")
+
+out <- readRDS("./simulation_results_3-21-19.RDS")
+
+lapply(1:length(out),
+       function(i) {
+           o <- out[[i]]
+           lapply(1:length(o),
+                  function(j) {
+                      o1 <- o[[j]]
+                      data.frame(time=o1$time,
+                                 N=lapply(o1$traits, length) %>% unlist,
+                                 med_b=lapply(o1$traits, median) %>% unlist,
+                                 var_b=lapply(o1$traits, var) %>% unlist,
+                                 rep=j,
+                                 N0=initials$N[i],
+                                 b0=initials$b[i],
+                                 s=initials$s[i]
+                                 )
+                  }
+                  ) %>% do.call(rbind.data.frame,.)
+       }
+       ) %>% do.call(rbind.data.frame,.) -> out2
+
+## compute the means across each simulation replicate
+lapply(1:nrow(initials),
+       function(n)
+           sapply(seq(0, 99.9, 0.1),
+                  function(t)
+                      subset(out2, s==initials$s[n] & b0==initials$b[n] & N0==initials$N[n] & time>=t & time<(t+0.1)) %>% apply(., 2, mean)
+                  ) %>% t
+       ) %>% do.call(rbind.data.frame,.) -> out3
+
+mutate(out3,
+       RelEcoDiff=paste(round(N0/(1/(4*s*0.01)),1),"* EcoEvo N(0)"),
+       RelEvoDiff=paste(round(b0/(1/(2*s)),1), "* EcoEvo b(0)"),
+       initialS=paste("Initial s =",s)) -> out4
+
+ggplot(out4, aes(x=time, y=N, group=RelEcoDiff, colour=RelEcoDiff)) + geom_line() + facet_grid(initialS~RelEvoDiff, scales="free_y") + theme_bw()
+
+ggplot(out4, aes(x=time, y=med_b, group=RelEcoDiff, colour=RelEcoDiff)) + geom_line() + facet_grid(initialS~RelEvoDiff, scales="free_y") + theme_bw()
+
+ggplot(out4, aes(x=time, y=var_b, group=RelEcoDiff, colour=RelEcoDiff)) + geom_line() + facet_grid(initialS~RelEvoDiff, scales="free_y") + theme_bw()
+
+
+par(mfrow=c(3,3), mar=c(2,2,0,0), oma=c(2,2,0.5,0.5))
+for (es in c(0.2, 0.5, 0.8)) {
+    with(subset(out4, s==es & RelEcoDiff==0.8 & RelEvoDiff==1),
+         plot(time, N, type='l', col=2, xlab='',ylab=''))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1),
+         lines(time, N, col=1))
+    with(subset(out4, s==es & RelEcoDiff==1.2 & RelEvoDiff==1),
+         lines(time, N, col=4))
+}
+for (es in c(0.2, 0.5, 0.8)) {
+    with(subset(out4, s==es & RelEcoDiff==0.8 & RelEvoDiff==1),
+         plot(time, med_b, type='l', col=2, xlab='',ylab=''))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1),
+         lines(time, med_b, col=1))
+    with(subset(out4, s==es & RelEcoDiff==1.2 & RelEvoDiff==1),
+         lines(time, med_b, col=4))
+}
+for (es in c(0.2, 0.5, 0.8)) {
+    with(subset(out4, s==es & RelEcoDiff==0.8 & RelEvoDiff==1),
+         plot(time, var_b, type='l', col=2, xlab='',ylab=''))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1),
+         lines(time, var_b, col=1))
+    with(subset(out4, s==es & RelEcoDiff==1.2 & RelEvoDiff==1),
+         lines(time, var_b, col=4))
+}
+
+
+
+
+par(mfrow=c(3,3), mar=c(2,2,0,0), oma=c(2,2,0.5,0.5))
+for (es in c(0.2, 0.5, 0.8)) {
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==0.8),
+         plot(time, N, type='l', col=2, xlab='',ylab=''))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1),
+         lines(time, N, col=1))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1.2),
+         lines(time, N, col=4))
+}
+for (es in c(0.2, 0.5, 0.8)) {
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==0.8),
+         plot(time, med_b, type='l', col=2, xlab='',ylab=''))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1),
+         lines(time, med_b, col=1))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1.2),
+         lines(time, med_b, col=4))
+}
+for (es in c(0.2, 0.5, 0.8)) {
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==0.8),
+         plot(time, var_b, type='l', col=2, xlab='',ylab=''))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1),
+         lines(time, var_b, col=1))
+    with(subset(out4, s==es & RelEcoDiff==1 & RelEvoDiff==1.2),
+         lines(time, var_b, col=4))
+}
+
+ggplot(subset(out4, s==es), aes(x=time, y=N, group=N0, colour=as.factor(N0))) + geom_line() + facet_grid(~b0)
+
+
+par(mfrow=c(3,3), mar=c(2,2,0,0), oma=c(2,2,0.5,0.5))
+
+
+
+    with(subset(out4, s==0.2 & RelEcoDiff==0.8 & RelEvoDiff==1),
+     plot(time, N, type='l', col=2, xlab='',ylab=''))
+with(subset(out4, s==0.2 & RelEcoDiff==1 & RelEvoDiff==1),
+     lines(time, N, col=1))
+with(subset(out4, s==0.2 & RelEcoDiff==1.2 & RelEvoDiff==1),
+     lines(time, N, col=4))
+
+
+
+
+ggplot(out4, aes(x=time, y=N, group=as.factor(RelEcoDiff))) +
+    geom_line() +
+        facet_grid(~s)
+
+##
+
+
+
+@
+
+Another thing that you could do is to tabulate, for each individual, how many births it contributes and how long it lives.
+I'm going to start with that, because it's a more interesting coding problem.
+What I want to do is to record, for each individual: (i) trait; (ii) time of birth; (iii) time of death; (iv) number of offspring it has.
+
+<<eval=FALSE>>=
+
+library(tidyverse)
+library(magrittr)
+library(deSolve)
+library(parallel)
+source("logistic_GEM.R")
+
+
+## look at how actual heritability varies across variation in h2
+if(!file.exists("simulations_with_storage.RDS")) {
+    set.seed(1204)
+    seeds <- floor(runif(4,1,1e7))
+    h2s <- c(0.9,0.8,0.7,0.6)
+    ## storage version
+    storage_output <- vector(mode='list', length=4*4)
+    original_output <- vector(mode='list', length=4*4)
+    for (j in 1:4) {
+        for (i in 1:4) {
+            print(4*(j-1)+i)
+            storage_output[[4*(j-1)+i]] <- logistic_GEM_storage(seeds[i], 60, 5, 1.8, 0.3, h2s[j], 0.01, 0.01, 1/6)
+            original_output[[4*(j-1)+i]] <- logistic_GEM(seeds[i], 60, 0.1, 5, 1.8, 0.3, h2s[j], 0.01, 0.01, 1/6)
+        }
+    }
+    comparison <- vector(mode='list', length=2)
+    comparison[[1]] <- original_output
+    comparison[[2]] <- storage_output
+    saveRDS(comparison, file="simulations_with_storage.RDS")
+} else {
+    comparison <- readRDS("simulations_with_storage.RDS")
+    original_output <- comparison[[2]]
+    storage_output <- comparison[[1]]
+}
+
+## look at a parent-offspring regression across the three simulations for each h2 value
+par(mfcol=c(4,4), mar=c(1.5,1.5,0.5,0.5), oma=c(2,2,2,0))
+for (i in c(1,5,9,13)) {
+    with(subset(storage_output[[i]],ancTrait!=0), plot(ancTrait,trait))
+    legend(x='topleft',
+           paste0("h2=", with(subset(storage_output[[i]], ancTrait!=0), coef(lm(trait~ancTrait))[2] %>% round(2))),
+           bty='n',text.col=2)
+    if (i==1) mtext(side=3, line=0.5, paste("Actual h^2 = 0.9"), cex=0.75)
+    if (i==5) mtext(side=3, line=0.5, paste("Actual h^2 = 0.8"), cex=0.75)
+    if (i==9) mtext(side=3, line=0.5, paste("Actual h^2 = 0.7"), cex=0.75)
+    if (i==13) mtext(side=3, line=0.5, paste("Actual h^2 = 0.6"), cex=0.75)
+
+    with(subset(storage_output[[i+1]],ancTrait!=0), plot(ancTrait,trait))
+    legend(x='topleft',
+           paste0("h2=", with(subset(storage_output[[i+1]], ancTrait!=0), coef(lm(trait~ancTrait))[2] %>% round(2))),
+           bty='n',text.col=2)
+
+    with(subset(storage_output[[i+2]],ancTrait!=0), plot(ancTrait,trait))
+    legend(x='topleft',
+           paste0("h2=", with(subset(storage_output[[i+2]], ancTrait!=0), coef(lm(trait~ancTrait))[2] %>% round(2))),
+           bty='n',text.col=2)
+
+    with(subset(storage_output[[i+3]],ancTrait!=0), plot(ancTrait,trait))
+    legend(x='topleft',
+           paste0("h2=", with(subset(storage_output[[i+3]], ancTrait!=0), coef(lm(trait~ancTrait))[2] %>% round(2))),
+           bty='n',text.col=2)
+}
+mtext(side=1, line=0.5, outer=T, "Parent trait")
+mtext(side=2, line=0.5, outer=T, "Offspring trait")
+
+
+## simplify to really look at the variability in the h2
+h2_variability <- vector(mode='list', length=40)
+set.seed(123432)
+seeds <- runif(40, 1, 1e7) %>% floor
+for (i in 1:40) {
+    print(i)
+    h2_variability[[i]] <- logistic_GEM_storage(seeds[i], 20, 5, 1.8, 0.3, 0.7, 0.01, 0.01, 1/6)
+}
+actual_h2s <- vector()
+for (i in 1:40)
+    actual_h2s <- c(actual_h2s, with(h2_variability[[i]], coef(lm(trait~ancTrait))[2]))
+
+
+## look at relationship between traits and fitness
+with(output, plot(trait, nOff))
+with(output, plot(trait, r))
+
+## how long do individuals live?
+## most do not last very long
+hist(output$lifespan[output$tDeath>0])
+
+## look at the relationship between r and tBirth
+with(output, plot(tBirth, r))
+
+with(output, lm(r~trait))
+with(output, lm(r~trait+I(trait^2)))
+with(output, plot(trait, r))
+lines(tr, -0.2264+1.1377*tr-0.1649*tr^2, col=2, lwd=2)
+
+with(output, lm(r~trait+I(trait^2)+tBirth))
+
+
+
+@
+
+
+<<>>=
+
+library(tidyverse)
+library(magrittr)
+library(deSolve)
+library(parallel)
+source("logistic_GEM.R")
+
+
+## low variation
+## initialization
+dt <- 0.1 ## size of time steps
+N0 <- 5 ## initial population size
+traitmean <- 1.8 ## initial mean of trait distribution
+traitcv <- 0.3 ## initial coefficient of variation of trait distribution
+h2 <- 0.75 ## heritability
+
+## logistic equation parameters
+bs <- c(0.05, 0.02, 0.01, 0.005)
+ds <- c(0.05, 0.02, 0.01, 0.005)
+slope <- 1/10
+tmax <- 100
+
+## what is the eco-evolutionary equilibrium for each of these bs and ds values?
+## N = 1/(2*s*(bs+ds))
+
+set.seed(123432)
+## 40 replicate simulations per dataset
+seeds <- runif(40, 1, 1e7) %>% floor
+out <- vector(mode='list', length=length(bs))
+for (i in 1:length(bs)) {
+    print(i)
+    mclapply(seeds,
+             function(s) logistic_GEM_storage(s, tmax, N0, traitmean, traitcv, h2, bs[i], ds[i], slope),
+             mc.cores=12) -> out[[i]]
+}
+
+## what is the trait distribution at t = 10
+hist(subset(out, tDeath > 10 & tBirth < 10)$traits)
+
+
+@
+
+\end{document}

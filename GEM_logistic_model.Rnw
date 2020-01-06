@@ -1,0 +1,584 @@
+\documentclass[12pt,reqno,final,pdftex]{amsart}
+%% DO NOT DELETE OR CHANGE THE FOLLOWING TWO LINES!
+%% $Revision$
+%% $Date$
+\usepackage[round,sort,elide]{natbib}
+\usepackage{graphicx}
+\usepackage{times}
+\usepackage{rotating}
+\usepackage{subfig}
+\usepackage{color}
+\newcommand{\aak}[1]{\textcolor{cyan}{#1}}
+\newcommand{\mab}[1]{\textcolor{red}{#1}}
+\newcommand{\cec}[1]{\textcolor{blue}{#1}}
+
+\setlength{\textwidth}{6.25in}
+\setlength{\textheight}{8.75in}
+\setlength{\evensidemargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\topmargin}{-.35in}
+\setlength{\parskip}{.1in}
+\setlength{\parindent}{0.3in}
+
+%% cleveref must be last loaded package
+\usepackage[sort&compress]{cleveref}
+\newcommand{\crefrangeconjunction}{--}
+\crefname{figure}{Fig.}{Figs.}
+\Crefname{figure}{Fig.}{Figs.}
+\crefname{table}{Table}{Tables}
+\Crefname{table}{Tab.}{Tables}
+\crefname{equation}{Eq.}{Eqs.}
+\Crefname{equation}{Eq.}{Eqs.}
+\crefname{appendix}{Appendix}{Appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+\creflabelformat{equation}{#2#1#3}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}
+\newtheorem{corol}[thm]{Corollary}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{hyp}[thm]{Hypothesis}
+\newtheorem{example}[thm]{Example}
+\newtheorem{conj}[thm]{Conjecture}
+\newtheorem{algorithm}[thm]{Algorithm}
+\newtheorem{remark}{Remark}
+\renewcommand\thethm{\arabic{thm}}
+\renewcommand{\theremark}{}
+
+\numberwithin{equation}{part}
+\renewcommand\theequation{\arabic{equation}}
+\renewcommand\thesection{\arabic{section}}
+\renewcommand\thesubsection{\thesection.\arabic{subsection}}
+\renewcommand\thefigure{\arabic{figure}}
+\renewcommand\thetable{\arabic{table}}
+\renewcommand\thefootnote{\arabic{footnote}}
+
+\newcommand\scinot[2]{$#1 \times 10^{#2}$}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textsf{#1}}
+\newcommand{\dlta}[1]{{\Delta}{#1}}
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
+\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
+\newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]}
+\newcommand{\dd}[1]{\mathrm{d}{#1}}
+\newcommand{\citetpos}[1]{\citeauthor{#1}'s \citeyearpar{#1}}
+
+\begin{document}
+
+<<setup,include=FALSE,cache=F>>=
+require(knitr)
+opts_chunk$set(
+               progress=T,prompt=F,tidy=F,highlight=T,
+               warning=F,message=F,error=F,
+               results='hide',echo=F,cache=T,
+               size='scriptsize',
+               fig.path='figure/',fig.lp="fig:",
+               fig.align='left',
+               fig.show='asis',
+               fig.height=4,fig.width=6.83,
+               out.width="\\linewidth",
+               dpi=150,
+               dev=c('png','tiff'),
+               dev.args=list(
+                 png=list(bg='transparent'),
+                 tiff=list(compression='lzw')
+                 )
+               )
+
+scinot <- function (x, digits = 2, type = c("expression","latex")) {
+  type <- match.arg(type)
+  x <- signif(x,digits=digits)
+  ch <- floor(log10(abs(x)))
+  mn <- x/10^ch
+  switch(type,
+         expression={
+           bquote(.(mn)%*%10^.(ch))
+         },
+         latex={
+           paste0("\\scinot{",mn,"}{",ch,"}")
+         }
+         )
+}
+
+require(xtable)
+
+options(scipen=-1)
+
+options(
+        xtable.caption.placement="top",
+        xtable.include.rownames=FALSE
+        )
+
+@
+
+
+<<>>=
+## initialization
+tmax <- 70 ## length of time series
+dt <- 0.1 ## size of time steps
+seed <- 1234320 ## RNG seed
+N0 <- 10 ## initial population size
+traitmean <- 1 ## initial mean of trait distribution
+traitcv <- 0.1 ## initial coefficient of variation of trait distribution
+h2 <- 0.8 ## heritability
+
+## logistic equation parameters
+bs <- 0.01
+ds <- 0.01
+slope <- 1/6
+
+pick_individuals <- function(N0, traitmean, traitsd) {
+    mu <- log(traitmean^2 / sqrt((traitsd)^2+traitmean^2))
+    sigma <- sqrt(log(traitsd^2 + 1))
+    ## record this initial distribution in the output
+    return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+
+logistic_GEM <- function(seed, tmax, dt, N0, traitmean, traitcv, h2, bs, ds, slope) {
+
+    ## set RNG seed
+    set.seed(seed)
+    ## initialize
+    times <- seq(0,tmax,by=dt)
+    t <- 0 ## current time
+    ## storage for time series; at each timestep, record the traits of every individual in the population
+    output <- vector("list", length(times))
+
+    ## draw initial trait distribution from lognormal with meanlog and sdlog given by traitmean and traitcv
+    output[[1]] <- pick_individuals(N0, traitmean, traitsd=traitmean*traitcv)
+    ## also record it in a vector called 'currentstate' that records the current state of the system only
+    currentstate <- output[[1]]
+
+    i <- 1 ## how many things in the output file?
+    while (t < tmax) {
+        if (length(currentstate) > 0) { ## as long as population size is > 0 pick an individual
+            ind <- sample(1:length(currentstate),1)
+            trait <- currentstate[ind]
+            N <- length(currentstate)
+            ## set up rates for each possible event
+            ## birth
+            brate <- (trait - bs*N)*N
+            ## death (specified by tradeoff between birth and death)
+            d <- slope*trait^2
+            drate <- (d + ds*N)*N
+            events <- c(brate,drate)
+
+            ## wheel of fortune
+            wheel <- cumsum(events)/sum(events)
+            ## which event happens?
+            event <- min(which(runif(1) < wheel))
+
+            if (event==1) { ## birth
+                ## compute the trait of the offspring
+                ## offspring trait distribution mean
+                trait_parent <- (1-h2)*mean(currentstate) + h2*trait
+                off_std <- sqrt(1-h2^2)*((1-h2)*sd(output[[1]])+h2*sd(currentstate))
+                newtrait <- pick_individuals(1, trait_parent, off_std)
+                ## add this individual to the current state vector
+                currentstate <- c(currentstate, newtrait)
+            }
+            else  ## death
+                currentstate <- currentstate[-ind]
+
+            ## advance time
+            t <- t + exp(-1/sum(events))/sum(events)
+
+            ## record in the output if necessary
+            if (t > times[i+1]) {## if time has passed the next recording time
+                output[[i+1]] <- currentstate ## record the system state
+                i <- i + 1 ## advance to the next timestep
+            }
+        }
+    }
+    return(output)
+}
+
+## here is an alternative version of the model where, instead of randomly choosing the individual and then creating the wheel of fortune based on its traits, instead computes a wheel of fortune for all possible events that occur to *any* individual and then uses the RNG to choose both the individual and the event
+logistic_GEM2 <- function(seed, tmax, dt, N0, traitmean, traitcv, h2, bs, ds, slope) {
+
+    ## set RNG seed
+    set.seed(seed)
+    ## initialize
+    times <- seq(0,tmax,by=dt)
+    t <- 0 ## current time
+    ## storage for time series; at each timestep, record the traits of every individual in the population
+    output <- vector("list", length(times))
+
+    ## draw initial trait distribution from lognormal with meanlog and sdlog given by traitmean and traitcv
+    output[[1]] <- pick_individuals(N0, traitmean, traitsd=traitmean*traitcv)
+    ## also record it in a vector called 'currentstate' that records the current state of the system only
+    currentstate <- output[[1]]
+
+    i <- 1 ## how many things in the output file?
+    while (t < tmax) {
+        if (length(currentstate) > 0) { ## as long as population size is > 0 pick an individual
+            ## wheel of fortune
+            N <- length(currentstate)
+            ## use per-capita birth and death rates - this keeps the total rate about the same between the two methods
+            brates <- (currentstate - bs*N)
+            d <- slope*currentstate^2
+            drates <- (d + ds*N)
+            ## wheel is set up with births first, then deaths
+            events <- c(brates,drates)
+            wheel <- cumsum(events)/sum(events)
+            rand <- runif(1)
+            ## who does the event happen to?
+            ind <- ifelse(min(which(rand < wheel)) <= N,
+                          min(which(rand < wheel)),
+                          min(which(rand < wheel))-N)
+            ## was the event a birth or death?
+            event <- ifelse(rand <= sum(brates)/sum(events),
+                            1, ## birth
+                            2) ## death
+
+            if (event==1) { ## birth
+                ## compute the trait of the offspring
+                ## offspring trait distribution mean
+                trait_parent <- (1-h2)*mean(currentstate) + h2*currentstate[ind]
+                off_std <- sqrt(1-h2^2)*((1-h2)*sd(output[[1]])+h2*sd(currentstate))
+                newtrait <- pick_individuals(1, trait_parent, off_std)
+                ## add this individual to the current state vector
+                currentstate <- c(currentstate, newtrait)
+            }
+            else  ## death
+                currentstate <- currentstate[-ind]
+
+            ## advance time
+            t <- t + exp(-1/sum(events))/sum(events)
+
+            ## record in the output if necessary
+            if (t > times[i+1]) {## if time has passed the next recording time
+                output[[i+1]] <- currentstate ## record the system state
+                i <- i + 1 ## advance to the next timestep
+            }
+        }
+    }
+    return(output)
+}
+
+
+## quantitative genetics model (here assuming an accelerating trade-off that will produce an ESS
+qg_model <- function(t, y, pars) {
+    bs <- pars["bs"]
+    ds <- pars["ds"]
+    slope <- pars["slope"]
+    V <- pars["V"]
+
+    N <- y[1]
+    b <- y[2]
+    d <- slope*b^2
+    dNdt <- (b-bs*N)*N-(d+ds*N)*N
+    dbdt <- V*(1-2*b*slope)
+    list(c(dNdt,dbdt))
+}
+@
+
+The first thing I want to consider is a comparison of two methods of simulating a GEM.
+The first is the classic GEM, which chooses an individual at random, uses a Monte Carlo algorithm to determine what happens to it based on the individual's traits, and then advances time a random amount based on the total rate of events for that individual.
+The second method modifies the algorithm by creating the ``wheel of fortune'' using the rates for every individual in the population, and then using the Monte Carlo algorithm to choose both an individual and an event from a single ``spin'' of the wheel.
+Obviously, time will advance much more slowly in the second model because the timestep is chosen using the code exp(-1/sum(events))/sum(events): since the second method sums across all events (births and deaths) for every individual in the population, the denominator is a very large number in the second method.
+Fig. \ref{fig:methodcomp} shows a comparison of the dynamics for the two models for an initial CV of 0.1 and a heritability of 0.8.
+
+<<methodcomp, fig.cap="Comparing the population dynamics for the original GEM model and the many-slice wheel of fortune GEM. I simulated 40 replicate populations, each for 200 time steps. The gray lines show the individual replicates, and the black line is the average at each time step across the 40 replicates. For this simulation, the initial trait CV is 0.1 and the initial heritability is 0.8. The birth rate and death rate density-dependence parameters are bs=0.01 and ds=0.01.">>=
+
+## low variation
+## initialization
+dt <- 0.1 ## size of time steps
+N0 <- 10 ## initial population size
+traitmean <- 1 ## initial mean of trait distribution
+traitcv <- 0.1 ## initial coefficient of variation of trait distribution
+h2 <- 0.8 ## heritability
+
+## logistic equation parameters
+bs <- 0.01
+ds <- 0.01
+slope <- 1/6
+tmax <- 200
+nreps <- 40
+
+reps1 <- reps2 <- vector(mode='list', length=nreps)
+for (i in 1:nreps) {
+    print(i)
+    reps1[[i]] <- logistic_GEM(23412+i, tmax, dt, N0, traitmean, traitcv, h2, bs, ds, slope)
+    reps2[[i]] <- logistic_GEM2(23412+i, tmax, dt, N0, traitmean, traitcv, h2, bs, ds, slope)
+}
+
+## how to plot this?
+## plot the population sizes for every simulation, and then the average across simulations
+sims1 <- lapply(reps1, function(l) lapply(l, length) %>% unlist)
+avg1 <- lapply(1:length(reps1[[1]]), function(i) lapply(reps1, function(l) length(l[[i]])) %>% unlist %>% mean) %>% unlist
+sims2 <- lapply(reps2, function(l) lapply(l, length) %>% unlist)
+avg2 <- lapply(1:length(reps2[[1]]), function(i) lapply(reps2, function(l) length(l[[i]])) %>% unlist %>% mean) %>% unlist
+
+par(mfrow=c(1,2), mar=c(2.5, 2.5, 2.5, 0.5), oma=c(2,2,0,0))
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=range(sims1))
+axis(1); axis(2); box('plot')
+for (i in 1:nreps)
+    lines(seq(0,tmax,dt), sims1[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avg1, lwd=2)
+mtext(side=3, line=0, 'Original GEM')
+
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=range(sims1))
+axis(1); axis(2); box('plot')
+for (i in 1:20)
+    lines(seq(0,tmax,dt), sims2[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avg2, lwd=2)
+mtext(side=3, line=0, 'Many-slice GEM')
+
+mtext(side=1, line=1, outer=TRUE, "Time")
+mtext(side=2, line=2, outer=TRUE, "Population size")
+@
+
+
+<<methodcomp2, fig.cap="Trait dynamics for the original and many-sclide GEM model when the original CV was 0.1 and heritability was 0.8.">>=
+
+## trait dynamics
+## easiest thing to do is to plot the trajectories for the mean trait
+traits1 <- lapply(reps1, function(l) lapply(l, function(j) mean(j, na.rm=TRUE)) %>% unlist)
+traits2 <- lapply(reps2, function(l) lapply(l, function(j) mean(j, na.rm=TRUE)) %>% unlist)
+
+avgtrait1 <- lapply(1:2001, function(i) lapply(traits1, function(l) l[i]) %>% unlist %>% mean(na.rm=T))
+avgtrait2 <- lapply(1:2001, function(i) lapply(traits2, function(l) l[i]) %>% unlist %>% mean(na.rm=T))
+
+par(mfrow=c(1,2), mar=c(2.5, 2.5, 2.5, 0.5), oma=c(2,2,0,0))
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=c(0,20))
+axis(1); axis(2); box('plot')
+for (i in 1:nreps)
+    lines(seq(0,tmax,dt), traits1[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avgtrait1, lwd=2)
+mtext(side=3, line=0, 'Original GEM')
+
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=range(traits2))
+axis(1); axis(2); box('plot')
+for (i in 1:20)
+    lines(seq(0,tmax,dt), traits2[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avgtrait2, lwd=2)
+mtext(side=3, line=0, 'Many-slice GEM')
+
+mtext(side=1, line=1, outer=TRUE, "Time")
+mtext(side=2, line=2, outer=TRUE, "Mean trait")
+
+@
+
+
+
+<<methodcomp3, fig.cap="Comparing the population dynamics for the original GEM model and the many-slice wheel of fortune GEM. For these simulations, the initial trait CV is 0.2 and the initial heritability is 0.9. The birth rate and death rate density-dependence parameters are bs=0.01 and ds=0.01.">>=
+
+## low variation
+## initialization
+dt <- 0.1 ## size of time steps
+N0 <- 10 ## initial population size
+traitmean <- 1 ## initial mean of trait distribution
+traitcv <- 0.2 ## initial coefficient of variation of trait distribution
+h2 <- 0.9 ## heritability
+
+## logistic equation parameters
+bs <- 0.01
+ds <- 0.01
+slope <- 1/6
+tmax <- 200
+nreps <- 40
+
+reps1 <- reps2 <- vector(mode='list', length=nreps)
+for (i in 1:nreps) {
+    print(i)
+    reps1[[i]] <- logistic_GEM(23412+i, tmax, dt, N0, traitmean, traitcv, h2, bs, ds, slope)
+    reps2[[i]] <- logistic_GEM2(23412+i, tmax, dt, N0, traitmean, traitcv, h2, bs, ds, slope)
+}
+
+## how to plot this?
+## plot the population sizes for every simulation, and then the average across simulations
+sims1 <- lapply(reps1, function(l) lapply(l, length) %>% unlist)
+avg1 <- lapply(1:length(reps1[[1]]), function(i) lapply(reps1, function(l) length(l[[i]])) %>% unlist %>% mean) %>% unlist
+sims2 <- lapply(reps2, function(l) lapply(l, length) %>% unlist)
+avg2 <- lapply(1:length(reps2[[1]]), function(i) lapply(reps2, function(l) length(l[[i]])) %>% unlist %>% mean) %>% unlist
+
+par(mfrow=c(1,2), mar=c(2.5, 2.5, 2.5, 0.5), oma=c(2,2,0,0))
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=range(sims1))
+axis(1); axis(2); box('plot')
+for (i in 1:nreps)
+    lines(seq(0,tmax,dt), sims1[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avg1, lwd=2)
+mtext(side=3, line=0, 'Original GEM')
+
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=range(sims1))
+axis(1); axis(2); box('plot')
+for (i in 1:20)
+    lines(seq(0,tmax,dt), sims2[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avg2, lwd=2)
+mtext(side=3, line=0, 'Many-slice GEM')
+
+mtext(side=1, line=1, outer=TRUE, "Time")
+mtext(side=2, line=2, outer=TRUE, "Population size")
+@
+
+
+<<methodcomp4, fig.cap="Trait dynamics for the original and many-sclide GEM model when the original CV was 0.1 and heritability was 0.8.">>=
+
+## trait dynamics
+## easiest thing to do is to plot the trajectories for the mean trait
+traits1 <- lapply(reps1, function(l) lapply(l, function(j) mean(j, na.rm=TRUE)) %>% unlist)
+traits2 <- lapply(reps2, function(l) lapply(l, function(j) mean(j, na.rm=TRUE)) %>% unlist)
+
+avgtrait1 <- lapply(1:2001, function(i) lapply(traits1, function(l) l[i]) %>% unlist %>% mean(na.rm=T))
+avgtrait2 <- lapply(1:2001, function(i) lapply(traits2, function(l) l[i]) %>% unlist %>% mean(na.rm=T))
+
+par(mfrow=c(1,2), mar=c(2.5, 2.5, 2.5, 0.5), oma=c(2,2,0,0))
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=c(0,20))
+axis(1); axis(2); box('plot')
+for (i in 1:nreps)
+    lines(seq(0,tmax,dt), traits1[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avgtrait1, lwd=2)
+mtext(side=3, line=0, 'Original GEM')
+
+plot.new()
+plot.window(xlim=c(0,tmax), ylim=range(traits2))
+axis(1); axis(2); box('plot')
+for (i in 1:20)
+    lines(seq(0,tmax,dt), traits2[[i]], col=gray(0.6))
+lines(seq(0,tmax,dt), avgtrait2, lwd=2)
+mtext(side=3, line=0, 'Many-slice GEM')
+
+mtext(side=1, line=1, outer=TRUE, "Time")
+mtext(side=2, line=2, outer=TRUE, "Mean trait")
+
+@
+
+
+
+\newpage
+
+The next thing I wanted to look at was the way that offspring traits are drawn.
+What I did to do this was the following:
+\begin{enumerate}
+\item Generate an initial distribution of traits (to plug into the function for calculating the offspring trait standard deviation) that is centered at a trait mean of 1 and a CV of 0.1. This is generated using the pick_individuals function with mean equal to the trait mean and standard deviation given by the trait mean times the CV.
+\item Generate a ``current'' distribution of traits that is centered at a trait mean of 3 and a CV of 0.1. This is generated using the pick_individuals function with mean equal to the trait mean and standard deviation given by the trait mean times the CV.
+\item To visualize the variation in offspring traits, I picked three individuals to serve as parents. One parent had a trait near the mean, one had the trait in the fifth percentile of the current trait distribution, and one had the trait in the 95th percentile of the current trait distribution.
+\item The mean trait for generating the offspring trait distribution was calculated as $(1-h^2)$ times the mean of the current trait distribution plus $h^2$ times the parent trait.
+\item I used the GEM function for calculating the offspring trait standard deviation: $1-h^2$ times the standard deviation of the initial trait distribution plus $h^2$ times the standard deviation of the current trait distribution, all times $(1-h^2)^2$.
+\item To visualize the possible traits, I generated 100 offspring for each parent.
+\item I then plotted a histogram of the trait distribution in the current population (black) and the trait distribution for the 100 offspring of the parent with the mean trait (red), the fifth percentile parent (green), and the 95th percentile parent (blue).
+\end{enumerate}
+
+The results can be seen in Fig. \ref{fig:offspringtraits}.
+While the current parents have a fairly tight distribution around the mean, the offspring trait distribution is incredibly ``smeared'' out, which much broader shoulders and a longer tail.
+
+<<offspringtraits, fig.cap='Offspring trait distributions using the normal GEM offspring standard deviation calculation.'>>=
+
+h2 <- 0.8
+traitcv <- 0.1
+initialmean <- 1
+currentmean <- 3
+N0 <- 1000
+
+## generate a made-up initial state of the system
+initialstate <- pick_individuals(N0, initialmean, traitsd=initialmean*traitcv)
+currentstate <- pick_individuals(N0, currentmean, traitsd=currentmean*traitcv)
+
+## generate the offspring distributions for parents with trait equal to the mean and in the tails of the distribution
+trait1 <- currentstate[which.min(abs(currentstate-3))]
+trait2 <- sort(currentstate)[50]
+trait3 <- sort(currentstate)[950]
+
+## parent traits, given heritability
+trait_parent1 <- (1-h2)*mean(currentstate) + h2*trait1
+trait_parent2 <- (1-h2)*mean(currentstate) + h2*trait2
+trait_parent3 <- (1-h2)*mean(currentstate) + h2*trait3
+
+## offspring trait standard deviation, given the initial state of the population and the current state
+## note that this will be identical for all parents
+off_std <- sqrt(1-h2^2)*((1-h2)*sd(initialstate)+h2*sd(currentstate))
+
+## generate a bunch of offspring, just to see how much variability there is
+off1 <- pick_individuals(100, trait_parent1, off_std)
+off2 <- pick_individuals(100, trait_parent2, off_std)
+off3 <- pick_individuals(100, trait_parent3, off_std)
+
+bin_function <- function(vals, no.bins=20) {
+    bin_seq <- seq(min(vals),max(vals),length=no.bins)
+    ## count no inds per bin
+    bin_heights <- data.frame(bin=rep(0,no.bins-1), height=rep(0,no.bins-1))
+    for (i in 2:no.bins)
+        bin_heights[i-1,] <- c(sum(bin_seq[(i-1):i])/2,
+                               sum(vals >= bin_seq[i-1] & vals < bin_seq[i])/length(vals))
+    return(bin_heights)
+
+}
+plot.new()
+plot.window(xlim=range(c(off1,off2,off3)), ylim=c(0,0.5))
+axis(1);axis(2);box('plot')
+with(bin_function(currentstate,12), lines(bin,height, type='l', lwd=2))
+with(bin_function(off1,12), lines(bin,height, type='l', col=2))
+with(bin_function(off2,12), lines(bin,height, type='l', col=3))
+with(bin_function(off3,12), lines(bin,height, type='l', col=4))
+
+
+@
+
+
+<<offspringtraits2, fig.cap='Offspring trait distributions using an altered GEM offspring standard deviation calculation that assumes that the CV remains constant.>>=
+off4 <- pick_individuals(100, trait_parent1, trait_parent1*traitcv)
+off5 <- pick_individuals(100, trait_parent2, trait_parent1*traitcv)
+off6 <- pick_individuals(100, trait_parent3, trait_parent1*traitcv)
+
+plot.new()
+plot.window(xlim=range(c(off4,off5,off6)), ylim=c(0,0.5))
+axis(1);axis(2);box('plot')
+with(bin_function(currentstate,12), lines(bin,height, type='l', lwd=2))
+with(bin_function(off4,12), lines(bin,height, type='l', col=2))
+with(bin_function(off5,12), lines(bin,height, type='l', col=3))
+with(bin_function(off6,12), lines(bin,height, type='l', col=4))
+
+@
+
+
+<<eval=FALSE>>=
+
+results <- vector(mode='list', length=20)
+for (i in 1:20) {
+    print(i)
+    results[[i]] <- logistic_GEM(floor(runif(1,1,1e7)), 100, dt, N0, traitmean, traitcv, h2, bs, ds, slope, tradeoff="slope*trait^2")
+}
+library(deSolve)
+out2 <- lsoda(y=c(10,1), times=seq(0,100,0.1), func=qg_model, parms=c(bs=bs, ds=ds, slope=slope, V=traitcv))
+
+par(mfrow=c(1,2))
+## calculate mean population dynamics across the simulations
+lapply(results, function(res) lapply(res, length) %>% unlist) %>% unlist %>% matrix(., ncol=20, byrow=FALSE) %>% as.data.frame -> out
+out$mean <- apply(out, 1, mean)
+plot.new()
+plot.window(xlim=c(1,nrow(out)), ylim=range(out))
+axis(1); axis(2); box('plot')
+mtext(side=1, line=3, "time")
+mtext(side=2, line=3, "pop size")
+for (i in 1:20)
+    lines(out[,i], col=gray(0.7))
+lines(out$mean, col='blue', lwd=2)
+lines(out2[,2], col='red', lwd=2)
+
+## calculate mean trait dynamics across the simulations
+lapply(results, function(res) lapply(res, mean) %>% unlist) %>% unlist %>% matrix(., ncol=20, byrow=FALSE) %>% as.data.frame -> out
+out$mean <- apply(out, 1, mean)
+plot.new()
+plot.window(xlim=c(1,nrow(out)), ylim=c(0,10))
+axis(1); axis(2); box('plot')
+mtext(side=1, line=3, "time")
+mtext(side=2, line=3, "trait mean")
+for (i in 1:20)
+    lines(out[,i], col=gray(0.7))
+lines(out$mean, col='blue', lwd=2)
+lines(out2[,3], col='red', lwd=2)
+
+@
+
+\end{document}

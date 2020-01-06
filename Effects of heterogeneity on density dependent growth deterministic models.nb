@@ -1,0 +1,2329 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     88016,       2321]
+NotebookOptionsPosition[     78583,       2100]
+NotebookOutlinePosition[     78939,       2116]
+CellTagsIndexPosition[     78896,       2113]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell["\<\
+The model of Stover et al. on incorporating demographic heterogeneity. In \
+this model, there are two phenotypes that can potentially differ in birth \
+rates and death rates. It is possible for one phenotype to give birth to \
+individuals of the other phenotype.\
+\>", "Text",
+ CellChangeTimes->{{3.766847389556539*^9, 3.766847407224648*^9}, {
+  3.766847459878622*^9, 
+  3.7668475040367403`*^9}},ExpressionUUID->"460f605e-1c30-458e-8d15-\
+043e51bc00d8"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dn1", "=", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]11", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]21", " ", "n2"}]}], ")"}], " ", 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]1", " ", "n1"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn2", "=", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]12", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]22", " ", "n2"}]}], ")"}], " ", 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]2", " ", "n2"}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.7668474099972973`*^9, 3.7668474501911297`*^9}, {
+  3.766847522412942*^9, 
+  3.7668475236359*^9}},ExpressionUUID->"e1b3ff82-aaee-4537-944f-cd398e880b36"],
+
+Cell["The mortality heterogeneity model is the following:", "Text",
+ CellChangeTimes->{{3.7668475256755*^9, 
+  3.766847531187278*^9}},ExpressionUUID->"99ac93bb-2c27-47c1-9268-\
+d1fb4b7f1e6e"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dn1", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "2"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]1", " ", "n1"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn2", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "2"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2"}], ")"}], " ", 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]2", " ", "n2"}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.766847539043522*^9, 
+  3.766847560746472*^9}},ExpressionUUID->"ae142e64-4204-421f-bf85-\
+8d01aa1def3b"],
+
+Cell["\<\
+If there was no heterogeneity, the equilibrium would be the following:\
+\>", "Text",
+ CellChangeTimes->{{3.7668475695856867`*^9, 
+  3.766847587424931*^9}},ExpressionUUID->"d5b69f9a-37be-4062-9906-\
+3c1e0b0b5d27"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Simplify", "[", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Beta]", " ", "n1", " ", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", "n1"}], ")"}]}], "-", 
+      RowBox[{"\[Delta]1", " ", "n1"}]}], "\[Equal]", "0"}], ",", "n1"}], 
+   "]"}], "]"}]], "Input",
+ CellChangeTimes->{{3.766847590314698*^9, 3.766847611121139*^9}, {
+  3.76684769127006*^9, 
+  3.766847696188466*^9}},ExpressionUUID->"4c004abc-08ac-4bbf-8274-\
+d796605e1009"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"n1", "\[Rule]", "0"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"n1", "\[Rule]", 
+     RowBox[{"1", "-", 
+      FractionBox["\[Delta]1", "\[Beta]"]}]}], "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{3.766847611529543*^9, 
+  3.766847696489539*^9},ExpressionUUID->"add2982a-ac29-40a4-9e41-\
+8686babaec16"]
+}, Open  ]],
+
+Cell["With heterogeneity, then, the equilibrium is the following:", "Text",
+ CellChangeTimes->{{3.766847614786108*^9, 
+  3.7668476263910913`*^9}},ExpressionUUID->"908c8a32-753b-4004-a3ca-\
+1986e43d9eb8"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"equil", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"dn1", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn2", "\[Equal]", "0"}]}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"n1", ",", "n2"}], "}"}]}], "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"Simplify", "[", 
+  RowBox[{
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "1", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "2", ",", "2"}], "]"}], "]"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.766847632999817*^9, 
+  3.766847680430415*^9}},ExpressionUUID->"bce97fd1-1174-421e-8d91-\
+edd7f342d8f4"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", "0"}], ",", 
+     RowBox[{"n2", "\[Rule]", "0"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", 
+      FractionBox[
+       RowBox[{"\[Delta]2", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"\[Beta]", " ", "\[Delta]1"}], "+", 
+          RowBox[{"\[Beta]", " ", "\[Delta]2"}], "-", 
+          RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]2"}]}], ")"}]}], 
+       RowBox[{"\[Beta]", " ", 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{"\[Delta]1", "+", "\[Delta]2"}], ")"}], "2"]}]]}], ",", 
+     RowBox[{"n2", "\[Rule]", 
+      RowBox[{
+       FractionBox[
+        SuperscriptBox["\[Delta]1", "2"], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{"\[Delta]1", "+", "\[Delta]2"}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"\[Delta]1", " ", "\[Delta]2"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{"\[Delta]1", "+", "\[Delta]2"}], ")"}], "2"]], "-", 
+       FractionBox[
+        RowBox[{"2", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2"}], 
+        RowBox[{"\[Beta]", " ", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{"\[Delta]1", "+", "\[Delta]2"}], ")"}], "2"]}]]}]}]}], 
+    "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.766847643501302*^9, 
+  3.7668476810312147`*^9}},ExpressionUUID->"7c326eaa-0b5d-4391-9fbf-\
+8d6ba90e15e8"],
+
+Cell[BoxData[
+ RowBox[{"1", "-", 
+  FractionBox[
+   RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]2"}], 
+   RowBox[{"\[Beta]", " ", 
+    RowBox[{"(", 
+     RowBox[{"\[Delta]1", "+", "\[Delta]2"}], ")"}]}]]}]], "Output",
+ CellChangeTimes->{{3.766847643501302*^9, 
+  3.76684768103673*^9}},ExpressionUUID->"af96e507-da19-437d-ba20-\
+4a97c80597b6"]
+}, Open  ]],
+
+Cell["\<\
+The equilibrium with heterogeneity will be larger than the equilibrium \
+without heterogeneity if phenotype 2 has a lower mortality rate than the \
+first phenotype. That is, of course, super obvious.\
+\>", "Text",
+ CellChangeTimes->{{3.7668477229712057`*^9, 3.7668477453460617`*^9}, {
+  3.766847855269519*^9, 
+  3.766847882476336*^9}},ExpressionUUID->"bf30ecdf-2bcf-4da3-9b70-\
+91df3a81e444"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Beta]", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]1", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]2", ">", "0"}]}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     RowBox[{"1", "-", 
+      FractionBox[
+       RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]2"}], 
+       RowBox[{"\[Beta]", " ", 
+        RowBox[{"(", 
+         RowBox[{"\[Delta]1", "+", "\[Delta]2"}], ")"}]}]]}], ">", 
+     RowBox[{"1", "-", 
+      FractionBox["\[Delta]1", "\[Beta]"]}]}], "]"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.766847754379055*^9, 
+  3.7668477879696608`*^9}},ExpressionUUID->"22455bec-1693-4665-b135-\
+9283ebb696a0"],
+
+Cell[BoxData[
+ RowBox[{"\[Delta]1", ">", "\[Delta]2"}]], "Output",
+ CellChangeTimes->{{3.7668477627462053`*^9, 
+  3.7668477890404987`*^9}},ExpressionUUID->"4d3a3473-4e32-411d-8f2a-\
+d6e711a6f773"]
+}, Open  ]],
+
+Cell["\<\
+A better comparison would be if there were three phenotypes, one of which had \
+a higher mortality rate, and one of which had a lower mortality rate. Here \
+let\[CloseCurlyQuote]s assume that n2 has the \[OpenCurlyDoubleQuote]mean\
+\[CloseCurlyDoubleQuote] phenotype, and n1 has a lower mortality rate, and n3 \
+has a higher mortality rate.\
+\>", "Text",
+ CellChangeTimes->{{3.766847885411736*^9, 3.766847912322782*^9}, {
+  3.766853685692554*^9, 
+  3.766853706667338*^9}},ExpressionUUID->"c9b8425d-158d-4bd4-ae09-\
+77512e5bde5d"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dn1", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "3"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]1", " ", "n1"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn2", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "3"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]2", " ", "n2"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn3", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "3"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]3", " ", "n3"}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.76684792202759*^9, 
+  3.766847986704021*^9}},ExpressionUUID->"5cd7e059-099b-4e74-9c1c-\
+f69cd694bd8e"],
+
+Cell["The equilibrium of this model is the following:", "Text",
+ CellChangeTimes->{{3.766847953772073*^9, 
+  3.766847960464823*^9}},ExpressionUUID->"5e0d0c51-0c40-4fb4-97af-\
+43d1db6dc8b4"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"equil", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"dn1", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn2", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn3", "\[Equal]", "0"}]}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"n1", ",", "n2", ",", "n3"}], "}"}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"Simplify", "[", 
+  RowBox[{
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "1", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "2", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "3", ",", "2"}], "]"}], "]"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.766847963834113*^9, 
+  3.766848001095359*^9}},ExpressionUUID->"fce6a2ed-8474-4122-938f-\
+5100e95431b8"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", "0"}], ",", 
+     RowBox[{"n2", "\[Rule]", "0"}], ",", 
+     RowBox[{"n3", "\[Rule]", "0"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", 
+      FractionBox[
+       RowBox[{"\[Delta]2", " ", "\[Delta]3", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]2"}], "+", 
+          RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+          RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}], "-", 
+          RowBox[{
+          "3", " ", "\[Delta]1", " ", "\[Delta]2", " ", "\[Delta]3"}]}], 
+         ")"}]}], 
+       RowBox[{"\[Beta]", " ", 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]}]]}], ",", 
+     RowBox[{"n2", "\[Rule]", 
+      RowBox[{
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2", " ", 
+         "\[Delta]3"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Delta]1", "2"], " ", 
+         SuperscriptBox["\[Delta]3", "2"]}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"\[Delta]1", " ", "\[Delta]2", " ", 
+         SuperscriptBox["\[Delta]3", "2"]}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "-", 
+       FractionBox[
+        RowBox[{"3", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2", " ", 
+         SuperscriptBox["\[Delta]3", "2"]}], 
+        RowBox[{"\[Beta]", " ", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+            RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+            RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]}]]}]}], 
+     ",", 
+     RowBox[{"n3", "\[Rule]", 
+      RowBox[{
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Delta]1", "2"], " ", 
+         SuperscriptBox["\[Delta]2", "2"]}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2", " ", 
+         "\[Delta]3"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"\[Delta]1", " ", 
+         SuperscriptBox["\[Delta]2", "2"], " ", "\[Delta]3"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "-", 
+       FractionBox[
+        RowBox[{"3", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", 
+         SuperscriptBox["\[Delta]2", "2"], " ", "\[Delta]3"}], 
+        RowBox[{"\[Beta]", " ", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+            RowBox[{"\[Delta]1", " ", "\[Delta]3"}], "+", 
+            RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]}]]}]}]}], 
+    "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.766847968928877*^9, 
+  3.7668480016905613`*^9}},ExpressionUUID->"a97c3e1e-2c70-41a2-afd6-\
+b52384e2049c"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}], "-", 
+   RowBox[{"3", " ", "\[Delta]1", " ", "\[Delta]2", " ", "\[Delta]3"}], "+", 
+   RowBox[{"\[Beta]", " ", "\[Delta]1", " ", 
+    RowBox[{"(", 
+     RowBox[{"\[Delta]2", "+", "\[Delta]3"}], ")"}]}]}], 
+  RowBox[{"\[Beta]", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"\[Delta]2", " ", "\[Delta]3"}], "+", 
+     RowBox[{"\[Delta]1", " ", 
+      RowBox[{"(", 
+       RowBox[{"\[Delta]2", "+", "\[Delta]3"}], ")"}]}]}], ")"}]}]]], "Output",\
+
+ CellChangeTimes->{{3.766847968928877*^9, 
+  3.766848001700124*^9}},ExpressionUUID->"47610907-990c-464e-bf3c-\
+a71530ca7984"]
+}, Open  ]],
+
+Cell[TextData[{
+ "The n2 equilibrium in a homogeneous population would be ",
+ Cell[BoxData[
+  RowBox[{"1", "-", 
+   FractionBox[
+    SubscriptBox["\[Delta]", "2"], "\[Beta]"]}]],
+  CellChangeTimes->{{3.766847754379055*^9, 3.7668477879696608`*^9}},
+  ExpressionUUID->"01eee36d-6671-4609-b8c4-72ac9961b672"],
+ "."
+}], "Text",
+ CellChangeTimes->{{3.76684801295054*^9, 3.766848044541093*^9}, {
+   3.766848391711899*^9, 3.766848391778687*^9}, 3.766848529852749*^9, {
+   3.766853738805277*^9, 
+   3.766853739390645*^9}},ExpressionUUID->"9d40fc53-ed5b-4d7b-98ee-\
+86390bbf730c"],
+
+Cell["\<\
+The heterogeneous population will have a higher equilibrium if:\
+\>", "Text",
+ CellChangeTimes->{{3.766848532835238*^9, 3.766848559067307*^9}, {
+  3.766853749937702*^9, 
+  3.7668537515770597`*^9}},ExpressionUUID->"6031e672-a4bc-4a97-b478-\
+d861db1678a4"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Beta]", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]1", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]2", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]3", ">", "0"}]}], ",", 
+   RowBox[{"FullSimplify", "[", 
+    RowBox[{
+     FractionBox[
+      RowBox[{
+       RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}], "-", 
+       RowBox[{"3", " ", "\[Delta]1", " ", "\[Delta]2", " ", "\[Delta]3"}], 
+       "+", 
+       RowBox[{"\[Beta]", " ", "\[Delta]1", " ", 
+        RowBox[{"(", 
+         RowBox[{"\[Delta]2", "+", "\[Delta]3"}], ")"}]}]}], 
+      RowBox[{"\[Beta]", " ", 
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"\[Delta]2", " ", "\[Delta]3"}], "+", 
+         RowBox[{"\[Delta]1", " ", 
+          RowBox[{"(", 
+           RowBox[{"\[Delta]2", "+", "\[Delta]3"}], ")"}]}]}], ")"}]}]], ">", 
+     
+     RowBox[{"1", "-", 
+      FractionBox["\[Delta]2", "\[Beta]"]}]}], "]"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7668480583656893`*^9, 3.766848074588221*^9}, {
+  3.766848393955166*^9, 3.766848394058292*^9}, {3.766848440170278*^9, 
+  3.766848447944756*^9}, {3.766848514294208*^9, 
+  3.7668485171804733`*^9}},ExpressionUUID->"9e189447-6e09-4f72-82a3-\
+896f7fb2d3ba"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"\[Delta]2", " ", 
+   RowBox[{"(", 
+    RowBox[{"\[Delta]1", "+", "\[Delta]3"}], ")"}]}], ">", 
+  RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}]}]], "Output",
+ CellChangeTimes->{
+  3.766848517772842*^9},ExpressionUUID->"37b95eeb-c65a-4a2b-b8cf-\
+99431e12f325"]
+}, Open  ]],
+
+Cell["\<\
+Let\[CloseCurlyQuote]s just assume, for simplicity\[CloseCurlyQuote]s sake, \
+that n1\[CloseCurlyQuote]s mortality rate is x units smaller and n3\
+\[CloseCurlyQuote]s mortality rate is x units larger. Then the heterogeneous \
+population will have a higher carrying capacity if:\
+\>", "Text",
+ CellChangeTimes->{{3.766848569617325*^9, 3.766848609487585*^9}, 
+   3.766848678485241*^9, {3.766848736914008*^9, 3.7668487569523706`*^9}, {
+   3.766853762731496*^9, 
+   3.766853805158327*^9}},ExpressionUUID->"3eae419a-1e9d-4560-a333-\
+35ff2d80e6bc"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{"\[Delta]2", ">", "0"}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Delta]2", " ", 
+       RowBox[{"(", 
+        RowBox[{"\[Delta]1", "+", "\[Delta]3"}], ")"}]}], ">", 
+      RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}]}], "/.", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Delta]1", "\[Rule]", 
+        RowBox[{"\[Delta]2", "-", "x"}]}], ",", 
+       RowBox[{"\[Delta]3", "\[Rule]", 
+        RowBox[{"\[Delta]2", "+", "x"}]}]}], "}"}]}], "]"}]}], "]"}]], "Input",\
+
+ CellChangeTimes->{{3.766848616520439*^9, 3.766848673716847*^9}, 
+   3.7668487396353807`*^9, 
+   3.76684881995958*^9},ExpressionUUID->"575c8e37-85ca-4281-af09-\
+43ddd069b80a"],
+
+Cell[BoxData[
+ RowBox[{
+  SuperscriptBox["x", "2"], ">", "0"}]], "Output",
+ CellChangeTimes->{{3.766848637007888*^9, 3.766848673979068*^9}, 
+   3.7668487407504053`*^9, 
+   3.766848820541745*^9},ExpressionUUID->"ce0f830c-bef9-4537-a3fa-\
+83f65c0eb1d6"]
+}, Open  ]],
+
+Cell[TextData[{
+ "In this model, heterogeneity of the additive variety will always ",
+ StyleBox["increase",
+  FontSlant->"Italic"],
+ " the carrying capacity, assuming that heterogeneity is even between the two \
+phenotypes. That\[CloseCurlyQuote]s interesting. What if the heterogeneity is \
+not even? Here, n1 has a lower mortality rate (x units smaller) and n3 has a \
+higher mortality rate (y units larger). Then the inequality is: ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    RowBox[{"2", " ", "x", " ", "y"}], ">", 
+    RowBox[{
+     SubscriptBox["\[Delta]", "2"], " ", 
+     RowBox[{"(", 
+      RowBox[{"y", "-", "x"}], ")"}]}]}], TraditionalForm]],
+  FormatType->"TraditionalForm",ExpressionUUID->
+  "c182bd77-bcfe-4edb-ab64-6867aa12d7fd"],
+ ". If x > y, then this will always be satisfied (which makes sense, since \
+the difference is biased towards n1)."
+}], "Text",
+ CellChangeTimes->{{3.766848682227889*^9, 3.7668487126507177`*^9}, {
+  3.766848761576507*^9, 3.766848814989739*^9}, {3.76684884843641*^9, 
+  3.7668488659899473`*^9}, {3.766848908143046*^9, 3.766848918577044*^9}, {
+  3.766849156560068*^9, 3.7668491587037783`*^9}, {3.766849217911242*^9, 
+  3.766849288462883*^9}, {3.7668494194729843`*^9, 3.7668494470873423`*^9}, {
+  3.766853818639031*^9, 
+  3.76685386809147*^9}},ExpressionUUID->"a3500b31-eecd-426f-9346-\
+6bfd411a4c0d"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{"\[Delta]2", ">", "0"}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Delta]2", " ", 
+       RowBox[{"(", 
+        RowBox[{"\[Delta]1", "+", "\[Delta]3"}], ")"}]}], ">", 
+      RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}]}], "/.", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Delta]1", "\[Rule]", 
+        RowBox[{"\[Delta]2", "-", "x"}]}], ",", 
+       RowBox[{"\[Delta]3", "\[Rule]", 
+        RowBox[{"\[Delta]2", "+", "y"}]}]}], "}"}]}], "]"}]}], "]"}]], "Input",\
+ExpressionUUID->"64760cd0-7d55-496e-88b8-10859df32c3d"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"x", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"2", " ", "y"}], "+", "\[Delta]2"}], ")"}]}], ">", 
+  RowBox[{"y", " ", "\[Delta]2"}]}]], "Output",
+ CellChangeTimes->{
+  3.766848816961411*^9},ExpressionUUID->"7fafc139-76f3-4103-bd90-\
+9bc86184d5ef"]
+}, Open  ]],
+
+Cell["\<\
+Even if y < x, it would still be possible for this inequality to be \
+satisfied, and the heterogeneous population equilibrium to be larger. For \
+example: \
+\>", "Text",
+ CellChangeTimes->{{3.766849453255764*^9, 3.7668494567581463`*^9}, {
+  3.76685387689109*^9, 
+  3.7668538970260887`*^9}},ExpressionUUID->"f4153b32-5cdc-44b9-9b19-\
+6a2004244172"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"x", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"2", " ", "y"}], "+", "\[Delta]2"}], ")"}]}], ">", 
+   RowBox[{"y", " ", "\[Delta]2"}]}], "/.", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"\[Beta]", "\[Rule]", "1"}], ",", 
+    RowBox[{"\[Delta]2", "\[Rule]", "0.5"}], ",", 
+    RowBox[{"x", "\[Rule]", "0.2"}], ",", 
+    RowBox[{"y", "\[Rule]", "0.3"}]}], "}"}]}]], "Input",
+ CellChangeTimes->{
+  3.766849627991746*^9},ExpressionUUID->"da252cab-a70c-4696-b542-\
+9b77ecfb955f"],
+
+Cell[BoxData["True"], "Output",
+ CellChangeTimes->{
+  3.766849629476117*^9},ExpressionUUID->"970b2595-c5f3-46c4-99c0-\
+5eb0c613c3b9"]
+}, Open  ]],
+
+Cell["\<\
+What if the heterogeneity is not additive, but is rather multiplicative? In \
+this case, n1 has its mortality rate reduced by a factor x, and n3 has its \
+mortality increased by a factor y. In this case, heterogeneity will increase \
+the carrying capacity if the following is true:\
+\>", "Text",
+ CellChangeTimes->{{3.7668496728194437`*^9, 3.766849737752598*^9}, {
+  3.766853902089735*^9, 
+  3.766853925176651*^9}},ExpressionUUID->"b553c160-8805-4546-b58a-\
+060f0d83efc7"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{"\[Delta]2", ">", "0"}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Delta]2", " ", 
+       RowBox[{"(", 
+        RowBox[{"\[Delta]1", "+", "\[Delta]3"}], ")"}]}], ">", 
+      RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}]}], "/.", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Delta]1", "\[Rule]", 
+        RowBox[{"\[Delta]2", " ", "x"}]}], ",", 
+       RowBox[{"\[Delta]3", "\[Rule]", 
+        RowBox[{"\[Delta]2", " ", "y"}]}]}], "}"}]}], "]"}]}], "]"}]], "Input",\
+
+ CellChangeTimes->{{3.7668496626458187`*^9, 
+  3.766849666508412*^9}},ExpressionUUID->"ab06fdb8-c418-4400-80e1-\
+a97eaa6430aa"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"x", "+", "y"}], ">", 
+  RowBox[{"2", " ", "x", " ", "y"}]}]], "Output",
+ CellChangeTimes->{
+  3.766849667906498*^9},ExpressionUUID->"418705e2-2466-4278-8fe9-\
+85faadbde13f"]
+}, Open  ]],
+
+Cell["\<\
+We can simplify this a bit further by solving the inequality for y:\
+\>", "Text",
+ CellChangeTimes->{{3.7668501787062607`*^9, 
+  3.766850203808612*^9}},ExpressionUUID->"d929b406-1553-4275-8f2f-\
+8adb308ff1d8"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"x", "+", "y"}], ">", 
+   RowBox[{"2", " ", "x", " ", "y"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"y", "-", 
+    RowBox[{"2", "x", " ", "y"}]}], ">", 
+   RowBox[{"-", "x"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"y", 
+    RowBox[{"(", 
+     RowBox[{"1", "-", 
+      RowBox[{"2", " ", "x"}]}], ")"}]}], ">", 
+   RowBox[{"-", "x"}]}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"If", " ", "x"}], " ", "<", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"1", "/", "2"}], " ", "then", " ", "1"}], "-", 
+     RowBox[{"2", "x"}]}], " ", ">", " ", 
+    RowBox[{
+    "0", " ", "and", " ", "this", " ", "can", " ", "be", " ", "rewritten", 
+     " ", "as"}]}], " ", "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{"y", ">", 
+  FractionBox[
+   RowBox[{"-", "x"}], 
+   RowBox[{"1", "-", 
+    RowBox[{"2", "x"}]}]]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+   "this", " ", "inequality", " ", "will", " ", "ALWAYS", " ", "be", " ", 
+    "true"}], " ", "*)"}]}]}], "Input",
+ CellChangeTimes->{{3.766850207865498*^9, 
+  3.76685031533146*^9}},ExpressionUUID->"a0095c30-a63b-431c-8351-\
+2a0f3bb25af3"],
+
+Cell[TextData[{
+ "If the first phenotype has a mortality rate that is less than half as much \
+as the second phenotype, then the carrying capacity will ",
+ StyleBox["always",
+  FontSlant->"Italic"],
+ " be increased."
+}], "Text",
+ CellChangeTimes->{{3.766850317442918*^9, 
+  3.766850356712975*^9}},ExpressionUUID->"03b5f2e7-7198-42ec-a13b-\
+b01df4425e4b"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"y", 
+    RowBox[{"(", 
+     RowBox[{"1", "-", 
+      RowBox[{"2", " ", "x"}]}], ")"}]}], ">", 
+   RowBox[{"-", "x"}]}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"If", " ", "x"}], " ", ">", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"1", "/", "2"}], " ", "then", " ", "1"}], "-", 
+     RowBox[{"2", "x"}]}], " ", "<", " ", 
+    RowBox[{
+    "0", " ", "and", " ", "this", " ", "can", " ", "be", " ", "rewritten", 
+     " ", "as"}]}], " ", "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{"y", "<", 
+  FractionBox[
+   RowBox[{"-", "x"}], 
+   RowBox[{"1", "-", 
+    RowBox[{"2", "x"}]}]]}]}], "Input",
+ CellChangeTimes->{{3.766850409503921*^9, 
+  3.766850423294083*^9}},ExpressionUUID->"01a9f537-e453-49b4-9825-\
+5066d84fe9d7"],
+
+Cell["\<\
+It\[CloseCurlyQuote]s easiest to visualize this as a region in x-y space, \
+since we know that y > 1 and x < 1. Basically, the upshot here is that, when \
+x > 1/2, there will be y values (the shaded region below) where the carrying \
+capacity is still increased by heterogeneity, but also a region where \
+heterogeneity decreases the carrying capacity.\
+\>", "Text",
+ CellChangeTimes->{{3.7668498996963663`*^9, 3.766849930551023*^9}, {
+  3.766850818508129*^9, 
+  3.766850901638465*^9}},ExpressionUUID->"c5d99bbc-1660-4c91-88f2-\
+ae27527936e0"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"RegionPlot", "[", 
+  RowBox[{
+   RowBox[{"y", "<", 
+    FractionBox[
+     RowBox[{"-", "x"}], 
+     RowBox[{"1", "-", 
+      RowBox[{"2", "x"}]}]]}], ",", 
+   RowBox[{"{", 
+    RowBox[{"x", ",", "0", ",", "1"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"y", ",", "1", ",", "5"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.766849966026286*^9, 3.7668499750933228`*^9}, {
+   3.766850024635398*^9, 3.76685002702815*^9}, {3.766850058723279*^9, 
+   3.766850065760854*^9}, 3.7668504714223013`*^9, {3.766850543185523*^9, 
+   3.766850596414415*^9}},ExpressionUUID->"cb496795-3868-4598-9720-\
+ba7ee958b0f0"],
+
+Cell[BoxData[
+ GraphicsBox[GraphicsComplexBox[CompressedData["
+1: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
+lvwfXLoRzg==
+   "], {{{
+      {RGBColor[0.368417, 0.506779, 0.709798], AbsoluteThickness[1.6], 
+       Opacity[0.3], EdgeForm[None], 
+       GraphicsGroupBox[{PolygonBox[CompressedData["
+1:eJxNmGu0llUVhfcqFQUEPCieo0c4cLjJRQFBAgMBhTRRhEhMFBGRyApJkjAt
+CINAULyAEoT3ENFEzQsmeUVBQZG7CCgqlo3GqD/97DbnWM83+H7MMfe73733
+u/Zca6+9vq/9pBvGTPtaKWV5lPJ18a2Cn5sJzWm7/3j4KKEFfLTQEj5G2Cis
+FpoI3xb6C8cKs1mvRmhdtfaJsNc+CfbaFwkDWHsu804WaqvWqIO9xjnCQNaY
+x9hThfqqeU8Ka5m3gPfthIaqsYvo6yA8I6zj/Z30dRIGC4OERuFu+roIm4Sl
+tNcL9wunCxuEFUJ34TVhldBTGCYMFc4UfoHuTdG7ORpVdG9epfvxVbq3qNKx
+Ndq3xBdz0P0E4W18Y39MEoYLZ1Xp7vm3oXUbNK5Fu4rWtWhcx/j5aH0K4+rR
+sRlzatC7nrkL0b0t4xrQeh3aur0YH7QXlqB7R+EetO6M9p2Ycy56+3micL7Q
+R1iGL7oKE4TzhN7CN/mubVqOj7oJK/FRD+EBfHSGcCU+6iVsxsdDSsbmSeg/
+WRgh9BWuYo7HTxUuEM4ueQasfRP8M4C544SRVesNRNvLhYt5Hl8yvv1+K3uw
+/Y1oYR2+J4zieRS6WJNLsdcanclevK8rhNE8j0Yf2/yQMIbnMehp3R4WvsOz
+eTg6j2XvjqXvCt9Ch8vYez/4QnT4Ycm8YD3WlDznFT1GVmngvdex10vwWWVv
+ndjfpeyrsodeVXb3rrK1D/aOxc4R2Go7h6HFUGy/DJvPwQcDsXEcNk5hXD/s
+HY/Nnn8l2t5UMg5sz9Ul4683tk2gfybv3H9Nydi1nYPx5SDsn8iYnzHOY64t
+eYa9l+tKxp/3Mot3lT1Opv197LbNNzOnL/uYQtu2/xj7f84cj/+p8CPhODSc
+hA326VTG3CL8AP967PWMvx5/H8v7qYyxBtPQwfu7gT167emsb9t/gv3T2X8f
+7L0Rm6ehdeWszcCeO0rmkfasMYt1ZrA3j9kmfFAy534IO2/9smQubsoYt3Ut
+lu2Mm429M7H5RjS1PTt4X8P4Oazz65K51Xn1NyXzpnPmrpL51rlzT8lc6ry4
+k/HO27sZ77l7Gecc+nHJPNmB8TtY6yPeO5feXjLntmXuQr67j3Ge/yvs9Lec
+b/eXzLn70NBzD9Dnc3cX45yTD5bMyx2ZtwTNPymZq7sw5gDP+7Hba33KOOfo
++0rm6670u+08/5lwqGSO/hz2Hfrbkrm7G2OWM/de7PHcL5jjnH4Y9p37u5K5
+3nnese4877z4JeP8/GDJO8Dv7f9HSsbAl/T3QLNH8e9ufDkPv/0ePZ2/fP/V
+Ys9KbH685D3dCvZzS3gNbfv8iZJ+b8I43+lbWfM0+EnaT9Guw29P47tnS9Yx
+DSX9/4eSMbCO/kbe+dkxcwlzGnj/HGOs8Uvo/HLJ+sa1jX3+x5J+t/bPl4wH
+5+kXSuZp+/NF/NKBbzXiz/X49F3W9ZrvlKxX+uO3DfjO+r2Chn+mvzs+eRW/
+bOFdd3z5Gv51nG1ifd8Vr5fMxxv5Vits+RNzfW+8WTLn2f9vlYyB1cxphX0b
+8Y/vnDdK5mzH+H40GcJ3fRYcH3vQ3358v+T9djH+s+/eK1lnDMGWLdizGY1s
+v3OVc5frRMfnNvqce5wHTuD9Nmyu5LimjHG7Gbyd/jm0/X4t9tVjo9uOsbms
+XwPv5Fve095yJKf5PLRhv352fptPv/sWMMe5biFzF6DTZvboZ+cox/AiNLWe
+t/HduWAX31rE+HbwPuYupu33d7KOY/BQyZg4nX7nKMdtXwn2VeSd/474s8jY
+2yjeFBlzb4vbR8bZAvG/StYiz6l9IFKrE8WDIv3bTvxmpD899tXI8fXixZG+
+bhRPiLyDjxE/Hhl3g8X/LHkuW6n918ja5A1x28gz00b8UuRZ9VlwnnLsn+Jv
+RtYU74rfjzwPB8XnRZ7BfeJzI+P5I/HHkefhc/HwyLPzqPi/JWujVWr/u2Qt
+1VntDyJrqF7ea2Rt10U8MfKevB+trbP38ZfIvdjeT7B5v7hP5Ln/u3A48kxY
+y2Ho+ZD4PyXrNvvkPfxySDwg8txsjbTbNncVXxNZO3QXXxt5VztH+U66G58f
+xO9+9n3UGf6U9lKefX6X0b+UffRnL63FL0Tm3Brx85F51veP877z1QqefZZX
+0r+iHLnbuqGT77Ou5ci95Zy2nH6P/ZvwNP5axZieaHY2utU6LiJz8cni9ZE5
++lTHbGQubhC/FZlPO4g3R+bQjuKrI2urJ8RNhW/Yf+JJkfVUC/EzkffTF+J+
+kbXwYWLPNjtOWxKrpznuIu+PJuI1kXdnM/FTkfdlT/HkyBptnfWLvA+fte2R
+d9tXfM/f6iZ+IKjlxWMj69ox4tGRdfAo+yeybr5QfEFkXV7xveuZy9U3LrLe
+vVk8K7JGm+F4iayPHrONkTXvePEVkfVs78i4d8z7nNVx1hyz/ygZt/O9XuQ9
+6HNm/9l3IyLPj8/OSPFFkb8HpvvcRNahPludGHOV+LjI+nq1+H8lf1PZP0Px
+0SLx7ZH11F3iJZG10nbxjsj7yf/xHBX5O2+b+MPIu3Cm+KbIWvVe8T2RtdJ9
+4mWRNdFa+0F4zDHs95H342zbG1l3Pyx+JPK3hf3zID7aKd4VeaeuEB8d+Zvy
+FfGGyFrhVvEtkXXrXGsfWW/Os12R9d35kXltMOfwEOfFOfusyLzdI9IO2+D8
+ekdkjp3iGIn8TbMlMic6Hzqf7Y7MaWdE+tu+dr7ZE5lznP/2RubA/wM+2gk6
+
+          "]], PolygonBox[CompressedData["
+1:eJwtlmm0lmMUhvdOIkOKZCyOQtKwjEWlTCFNTmmShtOg+aSiFOkkUiRFVCIa
+lKVZ8zyQUMusYqE/YaFWWMb+dN3u8+Naz73f7x2eZ49fQVFx4eAyETEVykJB
+RrwLm9Cb4QcYgj2G9RRohW4J3dE9YCZ6FryBvg06oNtDH/QDMA09FV5Bz4Z7
+0G2gCN0T7kY3h67obtAO3RZ6oXvDbzAO+3nWGvAjDMMuYa0EDdHfwC50fRiA
+vjf97CPQH12Y/tZIvRN9PwxED4cT0P9qX9AZTsQ+xto2fKay2P+xFsLrMBC7
+Y/pso6AfunXaFyNgOvpFeA09Rz5A36Vvoh+CP+BJ7BdYL4My6N9ZW0MnOAqP
+c22yYgEl6LEwJeyDSeiJMB39EvRFt0j77mH4S/dhz2StBWej18By9Aq4Bh3Q
+Qb6HKejnYEb4mfHoJ2BaeI8N0NthPfoD+BOeSX+7JgxC3wf90KPhavR+eC8c
+k2robbAu/I470XdAl7BPXta30769VTFAd4K+4Xf+o3OmfVkX/ta+0rlUG27U
+t9K5+hGU17uhfzjGP8sv2ONZq4TP/hNLi7APEvsX1pbQEQ7Do1ybpL3Dr8oj
+7Ams58MN6O9hN/pDaIy+CVqhGynG6OHyYfibyu0aMDic46qdy6E4XEM6ax0Y
+Fj5zt3TOKFf0TK90zinXdI9qpyYMCddQUTrHldsPQs90DSj3h4Zr8cq0Vk2q
+tq5I36saW572kXzzFnySjolisS1cGx+ntWrks3TNq9a3Q490DSj3tSfVyqfp
+31QzqqXPsXeEa+oL9QK4PXztHfRKqIp+G65HV4LFpTHpns5x5bZ81jWdE8qF
+QeFcqp7Wyqkl6NNgEXohLEUvS+uKMAJdIX3Wp/RNaWiAng+L0z1GvWUBzFFu
+qqegm4Vje2r6N8V4AvppaINuArPRr0K78BkXouvBTvRcvRP9pnqCakExRpdL
+//YYNEX3Sfem8nAd+nTVWGnOKrdPVozDOT4XPQ/ayxdwabqnqZfdoj2gm6V1
+PdWYYqecRVeHReker94+TzmEfVJaj4Wb03vSXuSjr9EH0r5Uje9I16BqbwNs
+QV+oZ8I+OQKHsPeGY/wlulbal/LRGekaVO01hPPSPVG9UHv8Cl07fTbFQL2q
+KqwN96yt6Z6kXqRr+7Drpn0rnxSnfSzfaoaNTOeAYq+abpSeIZodzVUzaR/o
+7CVhX1+V/k0+Vy+7KH1W9TTl2rXpXqqcG6NvwbPhHq7YVUyfTTFUbq9I57py
+fLRqGyaGe45m5cWwMTwzd6Z7unq5rmm2XAJbwjNmXXpmFKiWwr37XFgV7uHr
+0zNUs1PXvsP+Nh37leHZck76Wc2Yveg96VzZGp5NG7FXh2eUep9mgmbB/z1Q
+sU/fW6c01pXTvVAx1+ypkv6WZpDOeiYsCZ95d7qnq5frTJvTM1KzcQ28j70r
+/W79J6mfnmmaZeq5moUXpO/VTJTvz4Kl4RhsUqzTtakzrEr3dPVy7WF1uuer
+1+uZydgH071dOXwcEksUPA==
+          "]]}]}}, {}, {}, {}, {}}, {{
+      {RGBColor[0.368417, 0.506779, 0.709798], AbsoluteThickness[1.6], 
+       LineBox[CompressedData["
+1:eJwl1GW0FAUAhuGluYAgKaB0h6C0dHdeGhRpASmluzuku7u7QUAaJKRVSkFB
+EFC645lzfzz7zvk2zu7OzqZp2iG8faRQKJTYzUkNjveT08FSohM8oAMduem+
+ZRqD7/ieTtyyr9LYdKYLXbljX6dx6UZ3enDXvkkT0JNe9OaefbMmpA996cf/
+9m36Ef0ZwEAe2LdrUgYxmCE8sv+oHzOCkYziiX2PpmAsPzCOp8Hn1tSMZwIT
+eWY/ommZxGSm8NzeSNNRjvJU4Bu+Jj0VqURlWtGYTFShKtVoTRMyU50ahNOG
+pmShJrWozbc0Ixt1qEs92tKcT6lPAxrSLvhuvdd8VOAdS2yLWUQOLvLWvlAX
+MJ/sXOCNfZ7OZQ5ZOc9r+2ydxUzOcZZX9mg6g+mc4TQv7VF1GlP5hVO8sEfR
+DJwkI2Upw3WOc4Kj/Mwx/uQQhzlAGg5SkH2kYi8p+YkCXOML/mAMo/mE3Tz2
+HobrMIayi508tEfWZOwgOaUpxRWuspUkbIkUcQ3l5yb/eW5RLUIi/ua+raRe
+ZgMbWU988vEX/wbXoMbjFh/yAXm5wT+hiIs0d3BMHuKwmrWs4baHFNPf+J1f
+ycUlClGYz/icmHxJGF/RgpYUpwSxWM5KVgS/Ga9dgDDaEJMYRA/Oe3COg/MZ
+fG+hiP+T9zhMibQ=
+        "]]}}}}],
+  AspectRatio->1,
+  Axes->{False, False},
+  AxesLabel->{None, None},
+  AxesOrigin->{Automatic, Automatic},
+  DisplayFunction->Identity,
+  Frame->{{True, True}, {True, True}},
+  FrameLabel->{{None, None}, {None, None}},
+  FrameTicks->{{Automatic, Automatic}, {Automatic, Automatic}},
+  GridLinesStyle->Directive[
+    GrayLevel[0.5, 0.4]],
+  Method->{
+   "ScalingFunctions" -> None, "TransparentPolygonMesh" -> True, 
+    "AxesInFront" -> True},
+  PlotRange->{{0, 1}, {1, 5}},
+  PlotRangeClipping->True,
+  PlotRangePadding->{{
+     Scaled[0.02], 
+     Scaled[0.02]}, {
+     Scaled[0.02], 
+     Scaled[0.02]}},
+  Ticks->{Automatic, Automatic}]], "Output",
+ CellChangeTimes->{
+  3.766849975931035*^9, 3.7668500665274887`*^9, 3.7668504725949583`*^9, {
+   3.766850567482259*^9, 
+   3.76685059687978*^9}},ImageCache->GraphicsData["CompressedBitmap", "\<\
+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
+sD8BUgrv9Q==\
+\>"],ExpressionUUID->"6455f083-834b-4181-afae-f1f5e5d26cd9"]
+}, Open  ]],
+
+Cell[TextData[{
+ "So heterogeneity will ",
+ StyleBox["tend",
+  FontSlant->"Italic"],
+ " to increase the carrying capacity, unless the heterogeneity is biased \
+towards a phenotype with a higher mortality rate. Of course, this was \
+considering the case where every phenotype was equally likely to be produced \
+by any other phenotype. In the GEM without evolution (where heritability is \
+0), there is actually a bias towards producing the intermediate phenotype. \
+Just for giggles, let\[CloseCurlyQuote]s explore that model by assuming that \
+the probability of producing n2 is higher than n1 or n3."
+}], "Text",
+ CellChangeTimes->{{3.766849639941881*^9, 3.766849654996434*^9}, {
+  3.7668509163497057`*^9, 3.76685093565261*^9}, {3.766851099076425*^9, 
+  3.766851171993299*^9}, {3.76685120216022*^9, 
+  3.766851204031865*^9}},ExpressionUUID->"c973b128-b53f-4916-a6df-\
+b6a4ad99afa1"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dn1", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "4"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]1", " ", "n1"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn2", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "2"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]2", " ", "n2"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn3", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["\[Beta]", "4"], 
+     RowBox[{"(", 
+      RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]3", " ", "n3"}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.76684792202759*^9, 3.766847986704021*^9}, {
+  3.766851176577338*^9, 
+  3.766851180657054*^9}},ExpressionUUID->"de6d3a2f-9816-4b15-b74d-\
+2c301ff4c5c6"],
+
+Cell["The equilibrium of this model is the following:", "Text",
+ CellChangeTimes->{{3.766847953772073*^9, 
+  3.766847960464823*^9}},ExpressionUUID->"c64c485e-483c-410d-b988-\
+cddab5f62775"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"equil", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"dn1", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn2", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn3", "\[Equal]", "0"}]}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"n1", ",", "n2", ",", "n3"}], "}"}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"Simplify", "[", 
+  RowBox[{
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "1", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "2", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "3", ",", "2"}], "]"}], "]"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.766847963834113*^9, 3.766848001095359*^9}, 
+   3.766851235537321*^9},ExpressionUUID->"8e7497a3-22dc-4a89-a3b9-\
+f07a8e720130"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", "0"}], ",", 
+     RowBox[{"n2", "\[Rule]", "0"}], ",", 
+     RowBox[{"n3", "\[Rule]", "0"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", 
+      FractionBox[
+       RowBox[{"\[Delta]2", " ", "\[Delta]3", " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]2"}], "+", 
+          RowBox[{"2", " ", "\[Beta]", " ", "\[Delta]1", " ", "\[Delta]3"}], 
+          "+", 
+          RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}], "-", 
+          RowBox[{
+          "4", " ", "\[Delta]1", " ", "\[Delta]2", " ", "\[Delta]3"}]}], 
+         ")"}]}], 
+       RowBox[{"\[Beta]", " ", 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]}]]}], ",", 
+     RowBox[{"n2", "\[Rule]", 
+      RowBox[{
+       FractionBox[
+        RowBox[{"2", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2", " ", 
+         "\[Delta]3"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"4", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", 
+         SuperscriptBox["\[Delta]3", "2"]}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]2", " ", 
+         SuperscriptBox["\[Delta]3", "2"]}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "-", 
+       FractionBox[
+        RowBox[{"8", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2", " ", 
+         SuperscriptBox["\[Delta]3", "2"]}], 
+        RowBox[{"\[Beta]", " ", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+            RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+            RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]}]]}]}], 
+     ",", 
+     RowBox[{"n3", "\[Rule]", 
+      RowBox[{
+       FractionBox[
+        RowBox[{
+         SuperscriptBox["\[Delta]1", "2"], " ", 
+         SuperscriptBox["\[Delta]2", "2"]}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"2", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", "\[Delta]2", " ", 
+         "\[Delta]3"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "+", 
+       FractionBox[
+        RowBox[{"\[Delta]1", " ", 
+         SuperscriptBox["\[Delta]2", "2"], " ", "\[Delta]3"}], 
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+           RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+           RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]], "-", 
+       FractionBox[
+        RowBox[{"4", " ", 
+         SuperscriptBox["\[Delta]1", "2"], " ", 
+         SuperscriptBox["\[Delta]2", "2"], " ", "\[Delta]3"}], 
+        RowBox[{"\[Beta]", " ", 
+         SuperscriptBox[
+          RowBox[{"(", 
+           RowBox[{
+            RowBox[{"\[Delta]1", " ", "\[Delta]2"}], "+", 
+            RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+            RowBox[{"\[Delta]2", " ", "\[Delta]3"}]}], ")"}], "2"]}]]}]}]}], 
+    "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.766847968928877*^9, 3.7668480016905613`*^9}, 
+   3.766851206542049*^9},ExpressionUUID->"3ca508b1-25bc-453b-8f59-\
+dc10db9f62cd"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{
+   RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]2"}], "+", 
+   RowBox[{"2", " ", "\[Beta]", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+   RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}], "-", 
+   RowBox[{"4", " ", "\[Delta]1", " ", "\[Delta]2", " ", "\[Delta]3"}]}], 
+  RowBox[{
+   RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]2"}], "+", 
+   RowBox[{"2", " ", "\[Beta]", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+   RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}]}]]], "Output",
+ CellChangeTimes->{{3.766847968928877*^9, 3.7668480016905613`*^9}, 
+   3.766851206552359*^9},ExpressionUUID->"18769a18-376d-4993-b886-\
+8cb811a9ddcb"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Beta]", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]1", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]2", ">", "0"}], "&&", 
+    RowBox[{"\[Delta]3", ">", "0"}]}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     FractionBox[
+      RowBox[{
+       RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]2"}], "+", 
+       RowBox[{"2", " ", "\[Beta]", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+       RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}], "-", 
+       RowBox[{"4", " ", "\[Delta]1", " ", "\[Delta]2", " ", "\[Delta]3"}]}], 
+      
+      RowBox[{
+       RowBox[{"\[Beta]", " ", "\[Delta]1", " ", "\[Delta]2"}], "+", 
+       RowBox[{"2", " ", "\[Beta]", " ", "\[Delta]1", " ", "\[Delta]3"}], "+", 
+       RowBox[{"\[Beta]", " ", "\[Delta]2", " ", "\[Delta]3"}]}]], ">", 
+     RowBox[{"1", "-", 
+      FractionBox["\[Delta]2", "\[Beta]"]}]}], "]"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.766851219695483*^9, 
+  3.766851242309928*^9}},ExpressionUUID->"0d5f93c9-7f90-4a65-80b6-\
+f6afc0e0ce5c"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"\[Delta]2", " ", 
+   RowBox[{"(", 
+    RowBox[{"\[Delta]1", "+", "\[Delta]3"}], ")"}]}], ">", 
+  RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}]}]], "Output",
+ CellChangeTimes->{
+  3.766851243555287*^9},ExpressionUUID->"789f5bfc-3333-4b1a-9fb2-\
+f1f4cf887c92"]
+}, Open  ]],
+
+Cell["\<\
+This is the same as above, verifying the differences in heritability don\
+\[CloseCurlyQuote]t affect the results.
+
+The other thing that differs in our model is that, really, there are additive \
+differences in b that translate into multiplicative differences in d. 
+
+If the phenotypes are evenly distributed, then mortality heterogeneity still \
+definitely increases the carrying capacity in a deterministic model.\
+\>", "Text",
+ CellChangeTimes->{{3.7668512622772827`*^9, 3.766851286835718*^9}, {
+  3.7668520310399313`*^9, 3.766852063045169*^9}, {3.766852355783255*^9, 
+  3.766852379005232*^9}, {3.766852586996758*^9, 3.7668525902267113`*^9}, {
+  3.766853157278672*^9, 3.766853176053589*^9}, {3.766853303336382*^9, 
+  3.766853306583137*^9}},ExpressionUUID->"6df9840d-5f7d-4aa0-a3a2-\
+b73fb59ff408"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"a", ">", "0"}], "&&", 
+    RowBox[{"x", ">", "0"}]}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{"Expand", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"\[Delta]2", " ", 
+        RowBox[{"(", 
+         RowBox[{"\[Delta]1", "+", "\[Delta]3"}], ")"}]}], ">", 
+       RowBox[{"2", " ", "\[Delta]1", " ", "\[Delta]3"}]}], "/.", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"\[Delta]2", "\[Rule]", 
+         RowBox[{"a", " ", 
+          SuperscriptBox["b2", "2"]}]}], ",", 
+        RowBox[{"\[Delta]1", "\[Rule]", 
+         RowBox[{"a", " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"b2", "+", "x"}], ")"}], "2"]}]}], ",", " ", 
+        RowBox[{"\[Delta]3", "\[Rule]", 
+         RowBox[{"a", " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{"b2", "-", "x"}], ")"}], "2"]}]}]}], "}"}]}], " ", "]"}], 
+    "]"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.76685300489635*^9, 3.76685314859943*^9}, 
+   3.766853315136939*^9},ExpressionUUID->"e4be2da2-d6d4-4615-9d5c-\
+0d77afcfe1d5"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"3", " ", 
+   SuperscriptBox["b2", "2"]}], ">", 
+  SuperscriptBox["x", "2"]}]], "Output",
+ CellChangeTimes->{{3.76685313489526*^9, 
+  3.766853149017165*^9}},ExpressionUUID->"5b3e5b1f-6ec8-4bdf-bc32-\
+0ffa2010a45b"]
+}, Open  ]],
+
+Cell["\<\
+Let\[CloseCurlyQuote]s start with the simplest case of reproductive \
+heterogeneity.\
+\>", "Text",
+ CellChangeTimes->{{3.7668509720107307`*^9, 3.766850987850069*^9}, {
+   3.766851054463996*^9, 3.7668510739016523`*^9}, 
+   3.7668512900670643`*^9},ExpressionUUID->"a6e016df-f28e-4594-a17c-\
+a21df628cc97"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dn1", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["1", "3"], 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]1", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]2", " ", "n2"}], "+", 
+       RowBox[{"\[Beta]3", " ", "n3"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]", " ", "n1"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn2", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["1", "3"], 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]1", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]2", " ", "n2"}], "+", 
+       RowBox[{"\[Beta]3", " ", "n3"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]", " ", "n2"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn3", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["1", "3"], 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]1", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]2", " ", "n2"}], "+", 
+       RowBox[{"\[Beta]3", " ", "n3"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]", " ", "n3"}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.76684792202759*^9, 3.766847986704021*^9}, {
+  3.766851297827112*^9, 
+  3.76685132272995*^9}},ExpressionUUID->"03ad896e-4689-448d-a438-\
+7927fd97de22"],
+
+Cell["The equilibrium of this model is the following:", "Text",
+ CellChangeTimes->{{3.766847953772073*^9, 
+  3.766847960464823*^9}},ExpressionUUID->"973ced4e-2134-4395-a248-\
+36dc5f9b4068"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"equil", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"dn1", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn2", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn3", "\[Equal]", "0"}]}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"n1", ",", "n2", ",", "n3"}], "}"}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"Simplify", "[", 
+  RowBox[{
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "1", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "2", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "3", ",", "2"}], "]"}], "]"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.766847963834113*^9, 
+  3.766848001095359*^9}},ExpressionUUID->"d88e3e26-82a9-4ad5-ba21-\
+857fac31badb"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", "0"}], ",", 
+     RowBox[{"n2", "\[Rule]", "0"}], ",", 
+     RowBox[{"n3", "\[Rule]", "0"}]}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "\[Rule]", 
+      FractionBox[
+       RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3", "-", 
+        RowBox[{"3", " ", "\[Delta]"}]}], 
+       RowBox[{"3", " ", 
+        RowBox[{"(", 
+         RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3"}], ")"}]}]]}], 
+     ",", 
+     RowBox[{"n2", "\[Rule]", 
+      FractionBox[
+       RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3", "-", 
+        RowBox[{"3", " ", "\[Delta]"}]}], 
+       RowBox[{"3", " ", 
+        RowBox[{"(", 
+         RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3"}], ")"}]}]]}], 
+     ",", 
+     RowBox[{"n3", "\[Rule]", 
+      FractionBox[
+       RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3", "-", 
+        RowBox[{"3", " ", "\[Delta]"}]}], 
+       RowBox[{"3", " ", 
+        RowBox[{"(", 
+         RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3"}], ")"}]}]]}]}],
+     "}"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.766847968928877*^9, 3.7668480016905613`*^9}, 
+   3.766851326243355*^9},ExpressionUUID->"39219671-544e-482b-828c-\
+c17502220830"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3", "-", 
+   RowBox[{"3", " ", "\[Delta]"}]}], 
+  RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3"}]]], "Output",
+ CellChangeTimes->{{3.766847968928877*^9, 3.7668480016905613`*^9}, 
+   3.7668513262490396`*^9},ExpressionUUID->"fe15cd4f-4623-410e-9c80-\
+461ea9dd0a43"]
+}, Open  ]],
+
+Cell["\<\
+For the carrying capacity to be increased, you need to satisfy the following \
+inequality:\
+\>", "Text",
+ CellChangeTimes->{{3.766851377318612*^9, 
+  3.766851394446134*^9}},ExpressionUUID->"bf876b95-3d8a-46ed-8456-\
+07b69137cbba"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Delta]", ">", "0"}], "&&", 
+    RowBox[{"\[Beta]1", ">", "0"}], "&&", 
+    RowBox[{"\[Beta]2", ">", "0"}], "&&", 
+    RowBox[{"\[Beta]3", ">", "0"}]}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     FractionBox[
+      RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3", "-", 
+       RowBox[{"3", " ", "\[Delta]"}]}], 
+      RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3"}]], ">", 
+     RowBox[{"1", "-", 
+      FractionBox["\[Delta]", "\[Beta]2"]}]}], "]"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.766851348746622*^9, 
+  3.76685136615184*^9}},ExpressionUUID->"5e760239-2d7c-4cde-b600-\
+f9e2f3b08329"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"\[Beta]1", "+", "\[Beta]3"}], ">", 
+  RowBox[{"2", " ", "\[Beta]2"}]}]], "Output",
+ CellChangeTimes->{
+  3.766851367408514*^9},ExpressionUUID->"9062d290-651c-4bbc-8fa3-\
+c039d4a9500c"]
+}, Open  ]],
+
+Cell[TextData[{
+ "Again, we can consider some different cases. If reproductive heterogeneity \
+is additive and even between the two other phenotypes then heterogeneity has ",
+ StyleBox["no ",
+  FontSlant->"Italic"],
+ "effect on the carrying capacity, which is quite different from the case of \
+mortality heterogeneity."
+}], "Text",
+ CellChangeTimes->{{3.766851397445945*^9, 3.7668514066933413`*^9}, {
+  3.766851483058446*^9, 
+  3.766851527695723*^9}},ExpressionUUID->"dc1f7006-ff3a-4c10-ae5e-\
+bd72992d912b"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Beta]1", "+", "\[Beta]3"}], ">", 
+   RowBox[{"2", " ", "\[Beta]2"}]}], "/.", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"\[Beta]1", "\[Rule]", 
+     RowBox[{"\[Beta]2", "+", "x"}]}], ",", 
+    RowBox[{"\[Beta]3", "\[Rule]", 
+     RowBox[{"\[Beta]2", "-", "x"}]}]}], "}"}]}]], "Input",
+ CellChangeTimes->{{3.766851411951612*^9, 
+  3.766851437692081*^9}},ExpressionUUID->"d28a4701-2f46-4536-a65f-\
+395aca45f8cf"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"2", " ", "\[Beta]2"}], ">", 
+  RowBox[{"2", " ", "\[Beta]2"}]}]], "Output",
+ CellChangeTimes->{
+  3.766851438030805*^9},ExpressionUUID->"33955bb1-ffe5-477d-b570-\
+3a785cb7244c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Simplify", "[", 
+  RowBox[{
+   FractionBox[
+    RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3", "-", 
+     RowBox[{"3", " ", "\[Delta]"}]}], 
+    RowBox[{"\[Beta]1", "+", "\[Beta]2", "+", "\[Beta]3"}]], "/.", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"\[Beta]1", "\[Rule]", 
+      RowBox[{"\[Beta]2", "+", "x"}]}], ",", 
+     RowBox[{"\[Beta]3", "\[Rule]", 
+      RowBox[{"\[Beta]2", "-", "x"}]}]}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.766851469508046*^9, 
+  3.766851478442836*^9}},ExpressionUUID->"277d089b-6def-4595-9442-\
+b93f2275b54e"],
+
+Cell[BoxData[
+ RowBox[{"1", "-", 
+  FractionBox["\[Delta]", "\[Beta]2"]}]], "Output",
+ CellChangeTimes->{{3.766851472511394*^9, 
+  3.766851478731658*^9}},ExpressionUUID->"2ba6e06f-c387-488c-bf36-\
+f703c7de2b5e"]
+}, Open  ]],
+
+Cell["\<\
+If the additive differences are not equal, then reproductive heterogeneity \
+will increase the carrying capacity if n1 has its birth rate increased by \
+more than the amount that n2 has its birth rate decreased.\
+\>", "Text",
+ CellChangeTimes->{{3.766851569014202*^9, 3.766851608795478*^9}, {
+  3.766851663729157*^9, 
+  3.7668516709201927`*^9}},ExpressionUUID->"7dc4be2b-2ecf-4550-977d-\
+162b021bf4e6"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{"\[Beta]2", ">", "0"}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Beta]1", "+", "\[Beta]3"}], ">", 
+      RowBox[{"2", " ", "\[Beta]2"}]}], "/.", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Beta]1", "\[Rule]", 
+        RowBox[{"\[Beta]2", "+", "x"}]}], ",", 
+       RowBox[{"\[Beta]3", "\[Rule]", 
+        RowBox[{"\[Beta]2", "-", "y"}]}]}], "}"}]}], "]"}]}], "]"}]], "Input",\
+
+ CellChangeTimes->{{3.766851536520618*^9, 
+  3.7668515649986143`*^9}},ExpressionUUID->"f410e94e-9b9b-4d33-8cc6-\
+cffde0f092cc"],
+
+Cell[BoxData[
+ RowBox[{"x", ">", "y"}]], "Output",
+ CellChangeTimes->{{3.766851536807619*^9, 
+  3.7668515652839613`*^9}},ExpressionUUID->"62c0e424-3329-4a78-8dc0-\
+a7f74a30c06f"]
+}, Open  ]],
+
+Cell["\<\
+If the differences are multiplicative (with x > 1 and y < 1), then the \
+carrying capacity will be increased whenever x + y > 2. So, if the \
+differences are balanced (e.g. x = 1.1 and y = 0.9) then there will be no \
+effect on the carrying capacity, as before. If n1 has more than double the \
+birth rate of n2, then the carrying capacity will be increased regardless. \
+Otherwise, the carrying capacity will be increased or decreased, depending on \
+the bias.\
+\>", "Text",
+ CellChangeTimes->{{3.766851688271302*^9, 3.766851694119197*^9}, {
+  3.766851732885798*^9, 3.7668517623000317`*^9}, {3.766851795082614*^9, 
+  3.766851821536943*^9}, {3.76685185413586*^9, 3.766851875878467*^9}, {
+  3.766853411045535*^9, 
+  3.766853545211091*^9}},ExpressionUUID->"47e0e982-d12b-4016-8dbf-\
+7454612543eb"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{"\[Beta]2", ">", "0"}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"\[Beta]1", "+", "\[Beta]3"}], ">", 
+      RowBox[{"2", " ", "\[Beta]2"}]}], "/.", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Beta]1", "\[Rule]", 
+        RowBox[{"\[Beta]2", " ", "x"}]}], ",", 
+       RowBox[{"\[Beta]3", "\[Rule]", 
+        RowBox[{"\[Beta]2", " ", "y"}]}]}], "}"}]}], "]"}]}], "]"}]], "Input",\
+
+ CellChangeTimes->{{3.766851680273403*^9, 
+  3.76685168354405*^9}},ExpressionUUID->"c3b68052-1e56-4576-a4e4-\
+c497ea7fd61e"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"x", "+", "y"}], ">", "2"}]], "Output",
+ CellChangeTimes->{
+  3.766851683917469*^9},ExpressionUUID->"d294edd5-a1fd-4025-bf8b-\
+e9aee78d6eea"]
+}, Open  ]],
+
+Cell["\<\
+As before, changing the heritabilities doesn\[CloseCurlyQuote]t affect these \
+results.\
+\>", "Text",
+ CellChangeTimes->{{3.766853613072682*^9, 
+  3.766853630515641*^9}},ExpressionUUID->"b76578fb-2d8d-45ba-8883-\
+b923f97ea0f3"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"dn1", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["1", "4"], 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]1", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]2", " ", "n2"}], "+", 
+       RowBox[{"\[Beta]3", " ", "n3"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]", " ", "n1"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn2", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["1", "2"], 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]1", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]2", " ", "n2"}], "+", 
+       RowBox[{"\[Beta]3", " ", "n3"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]", " ", "n2"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dn3", "=", 
+   RowBox[{
+    RowBox[{
+     FractionBox["1", "4"], 
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{"\[Beta]1", " ", "n1"}], "+", 
+       RowBox[{"\[Beta]2", " ", "n2"}], "+", 
+       RowBox[{"\[Beta]3", " ", "n3"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"1", "-", "n1", "-", "n2", "-", "n3"}], ")"}]}], "-", 
+    RowBox[{"\[Delta]", " ", "n3"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{"equil", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"dn1", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn2", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn3", "\[Equal]", "0"}]}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"n1", ",", "n2", ",", "n3"}], "}"}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"Simplify", "[", 
+  RowBox[{
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "1", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "2", ",", "2"}], "]"}], "]"}], "+", 
+   RowBox[{"equil", "[", 
+    RowBox[{"[", 
+     RowBox[{"2", ",", "3", ",", "2"}], "]"}], "]"}]}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Assuming", "[", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"\[Delta]", ">", "0"}], "&&", 
+    RowBox[{"\[Beta]1", ">", "0"}], "&&", 
+    RowBox[{"\[Beta]2", ">", "0"}], "&&", 
+    RowBox[{"\[Beta]3", ">", "0"}]}], ",", 
+   RowBox[{"Simplify", "[", 
+    RowBox[{
+     FractionBox[
+      RowBox[{"\[Beta]1", "+", 
+       RowBox[{"2", " ", "\[Beta]2"}], "+", "\[Beta]3", "-", 
+       RowBox[{"4", " ", "\[Delta]"}]}], 
+      RowBox[{"\[Beta]1", "+", 
+       RowBox[{"2", " ", "\[Beta]2"}], "+", "\[Beta]3"}]], ">", 
+     RowBox[{"1", "-", 
+      FractionBox["\[Delta]", "\[Beta]2"]}]}], "]"}]}], "]"}]}], "Input",
+ CellChangeTimes->{{3.76684792202759*^9, 3.766847986704021*^9}, {
+  3.766851297827112*^9, 3.76685132272995*^9}, {3.766853560636188*^9, 
+  3.766853566394342*^9}, {3.7668536031383123`*^9, 
+  3.766853608688766*^9}},ExpressionUUID->"34b3019d-ea26-4f40-8d90-\
+258cfd9f1bcd"],
+
+Cell["\<\
+
+
+
+
+Also, notice that I cannot work with a 3d version of our logistic model \
+because it\[CloseCurlyQuote]s not really solvable analytically.\
+\>", "Text",
+ CellChangeTimes->{
+  3.766852588020252*^9, {3.7668539720152617`*^9, 
+   3.766853972470188*^9}},ExpressionUUID->"8b44b05b-c633-4610-ab89-\
+124844f8c9b6"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"dn1", "=", 
+  RowBox[{
+   RowBox[{
+    FractionBox["1", "3"], 
+    RowBox[{"(", 
+     RowBox[{"b", "-", 
+      RowBox[{"bs", " ", 
+       RowBox[{"(", 
+        RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}], " ", 
+    RowBox[{"(", 
+     RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}], "-", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{"d1", "+", 
+      RowBox[{"ds", " ", 
+       RowBox[{"(", 
+        RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}], " ", 
+    "n1"}]}]}], "\[IndentingNewLine]", 
+ RowBox[{"dn2", "=", 
+  RowBox[{
+   RowBox[{
+    FractionBox["1", "3"], 
+    RowBox[{"(", 
+     RowBox[{"b", "-", 
+      RowBox[{"bs", " ", 
+       RowBox[{"(", 
+        RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}], " ", 
+    RowBox[{"(", 
+     RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}], "-", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{"d2", "+", 
+      RowBox[{"ds", " ", 
+       RowBox[{"(", 
+        RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}], " ", 
+    "n2"}]}]}], "\[IndentingNewLine]", 
+ RowBox[{"dn3", "=", 
+  RowBox[{
+   RowBox[{
+    FractionBox["1", "3"], 
+    RowBox[{"(", 
+     RowBox[{"b", "-", 
+      RowBox[{"bs", " ", 
+       RowBox[{"(", 
+        RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}], " ", 
+    RowBox[{"(", 
+     RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}], "-", 
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{"d3", "+", 
+      RowBox[{"ds", " ", 
+       RowBox[{"(", 
+        RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}], " ", 
+    "n3"}]}]}]}], "Input",
+ CellChangeTimes->{{3.766852084172048*^9, 3.766852157914152*^9}, {
+  3.7668521988167152`*^9, 
+  3.7668522251425343`*^9}},ExpressionUUID->"32454ff1-bb95-423d-bd37-\
+8641dad1bce0"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   FractionBox["1", "3"], " ", 
+   RowBox[{"(", 
+    RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], " ", 
+   RowBox[{"(", 
+    RowBox[{"b", "-", 
+     RowBox[{"bs", " ", 
+      RowBox[{"(", 
+       RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}]}], "-", 
+  RowBox[{"n1", " ", 
+   RowBox[{"(", 
+    RowBox[{"d1", "+", 
+     RowBox[{"ds", " ", 
+      RowBox[{"(", 
+       RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}]}]}]], "Output",
+ CellChangeTimes->{
+  3.7668522405564413`*^9},ExpressionUUID->"878b775a-0da9-4e9a-9d24-\
+cb588aa41b2a"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   FractionBox["1", "3"], " ", 
+   RowBox[{"(", 
+    RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], " ", 
+   RowBox[{"(", 
+    RowBox[{"b", "-", 
+     RowBox[{"bs", " ", 
+      RowBox[{"(", 
+       RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}]}], "-", 
+  RowBox[{"n2", " ", 
+   RowBox[{"(", 
+    RowBox[{"d2", "+", 
+     RowBox[{"ds", " ", 
+      RowBox[{"(", 
+       RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}]}]}]], "Output",
+ CellChangeTimes->{
+  3.766852240563921*^9},ExpressionUUID->"c1013443-439b-4a47-95ae-\
+117d743d7374"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   FractionBox["1", "3"], " ", 
+   RowBox[{"(", 
+    RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}], " ", 
+   RowBox[{"(", 
+    RowBox[{"b", "-", 
+     RowBox[{"bs", " ", 
+      RowBox[{"(", 
+       RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}]}], "-", 
+  RowBox[{"n3", " ", 
+   RowBox[{"(", 
+    RowBox[{"d3", "+", 
+     RowBox[{"ds", " ", 
+      RowBox[{"(", 
+       RowBox[{"n1", "+", "n2", "+", "n3"}], ")"}]}]}], ")"}]}]}]], "Output",
+ CellChangeTimes->{
+  3.7668522405710278`*^9},ExpressionUUID->"f2bd3f3a-b6f1-43b1-861e-\
+c52ffb0e0ec5"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"equil", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"dn1", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn2", "\[Equal]", "0"}], ",", 
+      RowBox[{"dn3", "\[Equal]", "0"}]}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"n1", ",", "n2", ",", "n3"}], "}"}]}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.7668525751667833`*^9, 
+  3.7668525755073347`*^9}},ExpressionUUID->"a7a4ffd6-36d0-465e-b46e-\
+8891f9af4562"],
+
+Cell[BoxData["$Aborted"], "Output",
+ CellChangeTimes->{
+  3.766852288092183*^9},ExpressionUUID->"9aaf8581-03cf-4969-a984-\
+86b8d253a506"]
+}, Open  ]]
+},
+WindowSize->{1359, 1234},
+WindowMargins->{{84, Automatic}, {Automatic, 0}},
+FrontEndVersion->"11.1 for Mac OS X x86 (32-bit, 64-bit Kernel) (March 16, \
+2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 463, 9, 77, "Text", "ExpressionUUID" -> \
+"460f605e-1c30-458e-8d15-043e51bc00d8"],
+Cell[1024, 31, 866, 25, 81, "Input", "ExpressionUUID" -> \
+"e1b3ff82-aaee-4537-944f-cd398e880b36"],
+Cell[1893, 58, 191, 3, 47, "Text", "ExpressionUUID" -> \
+"99ac93bb-2c27-47c1-9268-d1fb4b7f1e6e"],
+Cell[2087, 63, 738, 23, 127, "Input", "ExpressionUUID" -> \
+"ae142e64-4204-421f-bf85-8d01aa1def3b"],
+Cell[2828, 88, 222, 5, 47, "Text", "ExpressionUUID" -> \
+"d5b69f9a-37be-4062-9906-3c1e0b0b5d27"],
+Cell[CellGroupData[{
+Cell[3075, 97, 492, 14, 49, "Input", "ExpressionUUID" -> \
+"4c004abc-08ac-4bbf-8274-d796605e1009"],
+Cell[3570, 113, 374, 11, 68, "Output", "ExpressionUUID" -> \
+"add2982a-ac29-40a4-9e41-8686babaec16"]
+}, Open  ]],
+Cell[3959, 127, 203, 3, 47, "Text", "ExpressionUUID" -> \
+"908c8a32-753b-4004-a3ca-1986e43d9eb8"],
+Cell[CellGroupData[{
+Cell[4187, 134, 686, 20, 81, "Input", "ExpressionUUID" -> \
+"bce97fd1-1174-421e-8d91-edd7f342d8f4"],
+Cell[4876, 156, 1497, 43, 75, "Output", "ExpressionUUID" -> \
+"7c326eaa-0b5d-4391-9fbf-8d6ba90e15e8"],
+Cell[6376, 201, 343, 9, 70, "Output", "ExpressionUUID" -> \
+"af96e507-da19-437d-ba20-4a97c80597b6"]
+}, Open  ]],
+Cell[6734, 213, 402, 8, 77, "Text", "ExpressionUUID" -> \
+"bf30ecdf-2bcf-4da3-9b70-91df3a81e444"],
+Cell[CellGroupData[{
+Cell[7161, 225, 685, 19, 75, "Input", "ExpressionUUID" -> \
+"22455bec-1693-4665-b135-9283ebb696a0"],
+Cell[7849, 246, 196, 4, 49, "Output", "ExpressionUUID" -> \
+"4d3a3473-4e32-411d-8f2a-d6e711a6f773"]
+}, Open  ]],
+Cell[8060, 253, 539, 10, 106, "Text", "ExpressionUUID" -> \
+"c9b8425d-158d-4bd4-ae09-77512e5bde5d"],
+Cell[8602, 265, 1101, 33, 188, "Input", "ExpressionUUID" -> \
+"5cd7e059-099b-4e74-9c1c-f69cd694bd8e"],
+Cell[9706, 300, 189, 3, 47, "Text", "ExpressionUUID" -> \
+"5e0d0c51-0c40-4fb4-97af-43d1db6dc8b4"],
+Cell[CellGroupData[{
+Cell[9920, 307, 851, 25, 81, "Input", "ExpressionUUID" -> \
+"fce6a2ed-8474-4122-938f-5100e95431b8"],
+Cell[10774, 334, 4474, 116, 196, "Output", "ExpressionUUID" -> \
+"a97c3e1e-2c70-41a2-afd6-b52384e2049c"],
+Cell[15251, 452, 673, 18, 70, "Output", "ExpressionUUID" -> \
+"47610907-990c-464e-bf3c-a71530ca7984"]
+}, Open  ]],
+Cell[15939, 473, 571, 14, 56, "Text", "ExpressionUUID" -> \
+"9d40fc53-ed5b-4d7b-98ee-86390bbf730c"],
+Cell[16513, 489, 264, 6, 47, "Text", "ExpressionUUID" -> \
+"6031e672-a4bc-4a97-b478-d861db1678a4"],
+Cell[CellGroupData[{
+Cell[16802, 499, 1252, 32, 75, "Input", "ExpressionUUID" -> \
+"9e189447-6e09-4f72-82a3-896f7fb2d3ba"],
+Cell[18057, 533, 297, 8, 49, "Output", "ExpressionUUID" -> \
+"37b95eeb-c65a-4a2b-b8cf-99431e12f325"]
+}, Open  ]],
+Cell[18369, 544, 552, 10, 77, "Text", "ExpressionUUID" -> \
+"3eae419a-1e9d-4560-a333-35ff2d80e6bc"],
+Cell[CellGroupData[{
+Cell[18946, 558, 754, 21, 49, "Input", "ExpressionUUID" -> \
+"575c8e37-85ca-4281-af09-43ddd069b80a"],
+Cell[19703, 581, 251, 6, 49, "Output", "ExpressionUUID" -> \
+"ce0f830c-bef9-4537-a3fa-83f65c0eb1d6"]
+}, Open  ]],
+Cell[19969, 590, 1346, 28, 138, "Text", "ExpressionUUID" -> \
+"a3500b31-eecd-426f-9346-6bfd411a4c0d"],
+Cell[CellGroupData[{
+Cell[21340, 622, 633, 17, 49, "Input", "ExpressionUUID" -> \
+"64760cd0-7d55-496e-88b8-10859df32c3d"],
+Cell[21976, 641, 289, 9, 49, "Output", "ExpressionUUID" -> \
+"7fafc139-76f3-4103-bd90-9bc86184d5ef"]
+}, Open  ]],
+Cell[22280, 653, 357, 8, 77, "Text", "ExpressionUUID" -> \
+"f4153b32-5cdc-44b9-9b19-6a2004244172"],
+Cell[CellGroupData[{
+Cell[22662, 665, 528, 16, 49, "Input", "ExpressionUUID" -> \
+"da252cab-a70c-4696-b542-9b77ecfb955f"],
+Cell[23193, 683, 133, 3, 49, "Output", "ExpressionUUID" -> \
+"970b2595-c5f3-46c4-99c0-5eb0c613c3b9"]
+}, Open  ]],
+Cell[23341, 689, 482, 9, 77, "Text", "ExpressionUUID" -> \
+"b553c160-8805-4546-b58a-060f0d83efc7"],
+Cell[CellGroupData[{
+Cell[23848, 702, 706, 20, 49, "Input", "ExpressionUUID" -> \
+"ab06fdb8-c418-4400-80e1-a97eaa6430aa"],
+Cell[24557, 724, 208, 6, 49, "Output", "ExpressionUUID" -> \
+"418705e2-2466-4278-8fe9-85faadbde13f"]
+}, Open  ]],
+Cell[24780, 733, 219, 5, 47, "Text", "ExpressionUUID" -> \
+"d929b406-1553-4275-8f2f-8adb308ff1d8"],
+Cell[25002, 740, 1236, 39, 227, "Input", "ExpressionUUID" -> \
+"a0095c30-a63b-431c-8351-2a0f3bb25af3"],
+Cell[26241, 781, 354, 9, 77, "Text", "ExpressionUUID" -> \
+"03b5f2e7-7198-42ec-a13b-b01df4425e4b"],
+Cell[26598, 792, 798, 25, 131, "Input", "ExpressionUUID" -> \
+"01a9f537-e453-49b4-9825-5066d84fe9d7"],
+Cell[27399, 819, 553, 10, 106, "Text", "ExpressionUUID" -> \
+"c5d99bbc-1660-4c91-88f2-ae27527936e0"],
+Cell[CellGroupData[{
+Cell[27977, 833, 628, 16, 68, "Input", "ExpressionUUID" -> \
+"cb496795-3868-4598-9720-ba7ee958b0f0"],
+Cell[28608, 851, 19544, 338, 572, 11466, 204, "CachedBoxData", "BoxData", \
+"Output", "ExpressionUUID" -> "6455f083-834b-4181-afae-f1f5e5d26cd9"]
+}, Open  ]],
+Cell[48167, 1192, 884, 16, 136, "Text", "ExpressionUUID" -> \
+"c973b128-b53f-4916-a6df-b6a4ad99afa1"],
+Cell[49054, 1210, 1150, 34, 183, "Input", "ExpressionUUID" -> \
+"de6d3a2f-9816-4b15-b74d-2c301ff4c5c6"],
+Cell[50207, 1246, 189, 3, 47, "Text", "ExpressionUUID" -> \
+"c64c485e-483c-410d-b988-cddab5f62775"],
+Cell[CellGroupData[{
+Cell[50421, 1253, 874, 25, 81, "Input", "ExpressionUUID" -> \
+"8e7497a3-22dc-4a89-a3b9-f07a8e720130"],
+Cell[51298, 1280, 4648, 117, 196, "Output", "ExpressionUUID" -> \
+"3ca508b1-25bc-453b-8f59-dc10db9f62cd"],
+Cell[55949, 1399, 699, 13, 68, "Output", "ExpressionUUID" -> \
+"18769a18-376d-4993-b886-8cb811a9ddcb"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[56685, 1417, 1080, 25, 74, "Input", "ExpressionUUID" -> \
+"0d5f93c9-7f90-4a65-80b6-f6afc0e0ce5c"],
+Cell[57768, 1444, 297, 8, 49, "Output", "ExpressionUUID" -> \
+"789f5bfc-3333-4b1a-9fb2-f1f4cf887c92"]
+}, Open  ]],
+Cell[58080, 1455, 809, 15, 224, "Text", "ExpressionUUID" -> \
+"6df9840d-5f7d-4aa0-a3a2-b73fb59ff408"],
+Cell[CellGroupData[{
+Cell[58914, 1474, 1124, 32, 52, "Input", "ExpressionUUID" -> \
+"e4be2da2-d6d4-4615-9d5c-0d77afcfe1d5"],
+Cell[60041, 1508, 248, 7, 49, "Output", "ExpressionUUID" -> \
+"5b3e5b1f-6ec8-4bdf-bc32-0ffa2010a45b"]
+}, Open  ]],
+Cell[60304, 1518, 313, 7, 47, "Text", "ExpressionUUID" -> \
+"a6e016df-f28e-4594-a17c-a21df628cc97"],
+Cell[60620, 1527, 1443, 43, 188, "Input", "ExpressionUUID" -> \
+"03ad896e-4689-448d-a438-7927fd97de22"],
+Cell[62066, 1572, 189, 3, 47, "Text", "ExpressionUUID" -> \
+"973ced4e-2134-4395-a248-36dc5f9b4068"],
+Cell[CellGroupData[{
+Cell[62280, 1579, 851, 25, 81, "Input", "ExpressionUUID" -> \
+"d88e3e26-82a9-4ad5-ba21-857fac31badb"],
+Cell[63134, 1606, 1301, 36, 70, "Output", "ExpressionUUID" -> \
+"39219671-544e-482b-828c-c17502220830"],
+Cell[64438, 1644, 350, 7, 68, "Output", "ExpressionUUID" -> \
+"fe15cd4f-4623-410e-9c80-461ea9dd0a43"]
+}, Open  ]],
+Cell[64803, 1654, 240, 6, 47, "Text", "ExpressionUUID" -> \
+"bf876b95-3d8a-46ed-8456-07b69137cbba"],
+Cell[CellGroupData[{
+Cell[65068, 1664, 695, 18, 74, "Input", "ExpressionUUID" -> \
+"5e760239-2d7c-4cde-b600-f9e2f3b08329"],
+Cell[65766, 1684, 219, 6, 49, "Output", "ExpressionUUID" -> \
+"9062d290-651c-4bbc-8fa3-c039d4a9500c"]
+}, Open  ]],
+Cell[66000, 1693, 509, 11, 77, "Text", "ExpressionUUID" -> \
+"dc1f7006-ff3a-4c10-ae5e-bd72992d912b"],
+Cell[CellGroupData[{
+Cell[66534, 1708, 457, 13, 49, "Input", "ExpressionUUID" -> \
+"d28a4701-2f46-4536-a65f-395aca45f8cf"],
+Cell[66994, 1723, 212, 6, 49, "Output", "ExpressionUUID" -> \
+"33955bb1-ffe5-477d-b570-3a785cb7244c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[67243, 1734, 583, 15, 74, "Input", "ExpressionUUID" -> \
+"277d089b-6def-4595-9442-b93f2275b54e"],
+Cell[67829, 1751, 211, 5, 68, "Output", "ExpressionUUID" -> \
+"2ba6e06f-c387-488c-bf36-f703c7de2b5e"]
+}, Open  ]],
+Cell[68055, 1759, 412, 8, 77, "Text", "ExpressionUUID" -> \
+"7dc4be2b-2ecf-4550-977d-162b021bf4e6"],
+Cell[CellGroupData[{
+Cell[68492, 1771, 615, 18, 49, "Input", "ExpressionUUID" -> \
+"f410e94e-9b9b-4d33-8cc6-cffde0f092cc"],
+Cell[69110, 1791, 178, 4, 49, "Output", "ExpressionUUID" -> \
+"62c0e424-3329-4a78-8dc0-a7f74a30c06f"]
+}, Open  ]],
+Cell[69303, 1798, 805, 14, 136, "Text", "ExpressionUUID" -> \
+"47e0e982-d12b-4016-8dbf-7454612543eb"],
+Cell[CellGroupData[{
+Cell[70133, 1816, 612, 18, 49, "Input", "ExpressionUUID" -> \
+"c3b68052-1e56-4576-a4e4-c497ea7fd61e"],
+Cell[70748, 1836, 175, 5, 49, "Output", "ExpressionUUID" -> \
+"d294edd5-a1fd-4025-bf8b-e9aee78d6eea"]
+}, Open  ]],
+Cell[70938, 1844, 237, 6, 47, "Text", "ExpressionUUID" -> \
+"b76578fb-2d8d-45ba-8883-b923f97ea0f3"],
+Cell[71178, 1852, 2894, 84, 305, "Input", "ExpressionUUID" -> \
+"34b3019d-ea26-4f40-8d90-258cfd9f1bcd"],
+Cell[74075, 1938, 319, 11, 165, "Text", "ExpressionUUID" -> \
+"8b44b05b-c633-4610-ab89-124844f8c9b6"],
+Cell[CellGroupData[{
+Cell[74419, 1953, 1740, 58, 188, "Input", "ExpressionUUID" -> \
+"32454ff1-bb95-423d-bd37-8641dad1bce0"],
+Cell[76162, 2013, 584, 19, 66, "Output", "ExpressionUUID" -> \
+"878b775a-0da9-4e9a-9d24-cb588aa41b2a"],
+Cell[76749, 2034, 582, 19, 66, "Output", "ExpressionUUID" -> \
+"c1013443-439b-4a47-95ae-117d743d7374"],
+Cell[77334, 2055, 584, 19, 66, "Output", "ExpressionUUID" -> \
+"f2bd3f3a-b6f1-43b1-861e-c52ffb0e0ec5"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[77955, 2079, 472, 13, 49, "Input", "ExpressionUUID" -> \
+"a7a4ffd6-36d0-465e-b46e-8891f9af4562"],
+Cell[78430, 2094, 137, 3, 49, "Output", "ExpressionUUID" -> \
+"9aaf8581-03cf-4969-a984-86b8d253a506"]
+}, Open  ]]
+}
+]
+*)
+
