@@ -1,0 +1,214 @@
+\documentclass[12pt,reqno,final,pdftex]{amsart}
+%% DO NOT DELETE OR CHANGE THE FOLLOWING TWO LINES!
+%% $Revision$
+%% $Date$
+\usepackage[round,sort,elide]{natbib}
+\usepackage{graphicx}
+\usepackage{times}
+\usepackage{rotating}1
+\usepackage{subfig}
+\usepackage{color}
+\newcommand{\aak}[1]{\textcolor{cyan}{#1}}
+\newcommand{\mab}[1]{\textcolor{red}{#1}}
+\newcommand{\cec}[1]{\textcolor{blue}{#1}}
+
+\setlength{\textwidth}{6.25in}
+\setlength{\textheight}{8.75in}
+\setlength{\evensidemargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\topmargin}{-.35in}
+\setlength{\parskip}{.1in}
+\setlength{\parindent}{0.3in}
+
+%% cleveref must be last loaded package
+\usepackage[sort&compress]{cleveref}
+\newcommand{\crefrangeconjunction}{--}
+\crefname{figure}{Fig.}{Figs.}
+\Crefname{figure}{Fig.}{Figs.}
+\crefname{table}{Table}{Tables}
+\Crefname{table}{Tab.}{Tables}
+\crefname{equation}{Eq.}{Eqs.}
+\Crefname{equation}{Eq.}{Eqs.}
+\crefname{appendix}{Appendix}{Appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+\creflabelformat{equation}{#2#1#3}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}
+\newtheorem{corol}[thm]{Corollary}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{hyp}[thm]{Hypothesis}
+\newtheorem{example}[thm]{Example}
+\newtheorem{conj}[thm]{Conjecture}
+\newtheorem{algorithm}[thm]{Algorithm}
+\newtheorem{remark}{Remark}
+\renewcommand\thethm{\arabic{thm}}
+\renewcommand{\theremark}{}
+
+\numberwithin{equation}{part}
+\renewcommand\theequation{\arabic{equation}}
+\renewcommand\thesection{\arabic{section}}
+\renewcommand\thesubsection{\thesection.\arabic{subsection}}
+\renewcommand\thefigure{\arabic{figure}}
+\renewcommand\thetable{\arabic{table}}
+\renewcommand\thefootnote{\arabic{footnote}}
+
+\newcommand\scinot[2]{$#1 \times 10^{#2}$}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textsf{#1}}
+\newcommand{\dlta}[1]{{\Delta}{#1}}
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
+\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
+\newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]}
+\newcommand{\dd}[1]{\mathrm{d}{#1}}
+\newcommand{\citetpos}[1]{\citeauthor{#1}'s \citeyearpar{#1}}
+
+\begin{document}
+
+<<setup,include=FALSE,cache=F>>=
+require(knitr)
+opts_chunk$set(
+               progress=T,prompt=F,tidy=F,highlight=T,
+               warning=F,message=F,error=F,
+               results='hide',echo=F,cache=T,
+               size='scriptsize',
+               fig.path='figure/',fig.lp="fig:",
+               fig.align='left',
+               fig.show='asis',
+               fig.height=4,fig.width=6.83,
+               out.width="\\linewidth",
+               dpi=150,
+               dev=c('png','tiff'),
+               dev.args=list(
+                 png=list(bg='transparent'),
+                 tiff=list(compression='lzw')
+                 )
+               )
+
+aqscinot <- function (x, digits = 2, type = c("expression","latex")) {
+  type <- match.arg(type)
+  x <- signif(x,digits=digits)
+  ch <- floor(log10(abs(x)))
+  mn <- x/10^ch
+  switch(type,
+         expression={
+           bquote(.(mn)%*%10^.(ch))
+         },
+         latex={
+           paste0("\\scinot{",mn,"}{",ch,"}")
+         }
+         )
+}
+
+require(xtable)
+
+options(scipen=-1)
+
+options(
+        xtable.caption.placement="top",
+        xtable.include.rownames=FALSE
+        )
+
+@
+
+In this document, I verify that the method that GEMs use to generate offspring
+
+<<echo=FALSE>>=
+
+## Code for generating new individuals
+pick_individuals <- function(N0, traitmean, traitsd) {
+    mu <- log(traitmean^2 / sqrt((traitsd)^2+traitmean^2))
+    sigma <- sqrt(log(traitsd^2 + 1))
+    ## record this initial distribution in the output
+    return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+## Here is how the GEM code generates traitmean and traitsd for the pick_individuals code
+## traitmean = (1-h2)*pop.mean.trait + h2*parent.trait
+## traitsd = sqrt(1-h2^2)*((1-h2)*initial.sd.trait + h2*current.sd.trait)
+
+## Generate an initial population of "parents" with identical means
+cv <- 0.3
+traitmean <- 1
+parents0 <- pick_individuals(1000, traitmean=traitmean, traitsd=cv*traitmean)
+
+## Now, for each parent, generate one offspring assuming different values of h2
+h2.seq <- seq(0.1,1,0.1)
+lapply(h2.seq,
+       function(h2)
+           sapply(parents0,
+                  function(p)
+                      pick_individuals(1,
+                                       traitmean=(1-h2)*mean(parents0) + h2*p,
+                                       traitsd=sqrt(1-h2^2)*((1-h2)*sd(parents0)+h2*sd(parents0))
+                                       )
+                  )
+       ) -> offspring1
+
+## Now use parent-offspring regression to estimate heritability for each actual heritability value
+par(mfrow=c(2,5), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
+for (i in 1:length(h2.seq)) {
+    plot(parents0, offspring1[[i]], ylab="", xlab="")
+    abline(lm(offspring1[[i]]~parents0))
+    legend(x='topleft',
+           c(paste("actual h^2 =", h2.seq[i]),
+             paste('estimated h^2 =', unname(signif(coef(lm(offspring1[[i]]~parents0))[2],3)))),
+           bty='n')
+}
+
+## Now simulate a second generation, using the offspring above as the parents
+parents1 <- offspring1
+lapply(1:length(h2.seq),
+       function(i) {
+           h2 <- h2.seq[i]
+           sapply(parents1[[i]],
+                  function(p)
+                      pick_individuals(1,
+                                       traitmean=(1-h2)*mean(parents0) + h2*p,
+                                       traitsd=sqrt(1-h2^2)*((1-h2)*sd(parents0)+h2*sd(parents1[[i]]))
+                                       )
+                  )
+       }
+       ) -> offspring2
+
+par(mfrow=c(2,5), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
+for (i in 1:length(h2.seq)) {
+    plot(parents1[[i]], offspring2[[i]], ylab="", xlab="")
+    abline(lm(offspring2[[i]]~parents1[[i]]))
+    legend(x='topleft',
+           c(paste("actual h^2 =", h2.seq[i]),
+             paste('estimated h^2 =', unname(signif(coef(lm(offspring2[[i]]~parents1[[i]]))[2],3)))),
+           bty='n')
+}
+
+## Now simulate a third generation, using the offspring above as the parents
+parents2 <- offspring2
+lapply(1:length(h2.seq),
+       function(i) {
+           h2 <- h2.seq[i]
+           sapply(parents2[[i]],
+                  function(p)
+                      pick_individuals(1,
+                                       traitmean=(1-h2)*mean(parents0) + h2*p,
+                                       traitsd=sqrt(1-h2^2)*((1-h2)*sd(parents0)+h2*sd(parents2[[i]]))
+                                       )
+                  )
+       }
+       ) -> offspring3
+
+par(mfrow=c(2,5), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
+for (i in 1:length(h2.seq)) {
+    plot(parents2[[i]], offspring3[[i]], ylab="", xlab="")
+    abline(lm(offspring3[[i]]~parents2[[i]]))
+    legend(x='topleft',
+           c(paste("actual h^2 =", h2.seq[i]),
+             paste('estimated h^2 =', unname(signif(coef(lm(offspring3[[i]]~parents2[[i]]))[2],3)))),
+           bty='n')
+}
+@ 
+
+\end{document}
+
+
