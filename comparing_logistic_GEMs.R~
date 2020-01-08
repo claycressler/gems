@@ -1,0 +1,14 @@
+seed <- 10110
+tmax <- 100
+N0 <- 5
+traitmean <- 1.8
+traitcv <- 0.3
+h2 <- 0.75
+bs <- ds <- 0.02
+slope <- 0.3/1.8^2
+
+source("logistic_GEM_with_storage.R")
+source("logistic_GEM.R")
+
+out1 <- logistic_GEM(seed, dt=0.1, tmax, N0, traitmean, traitcv, h2, bs, ds, slope)
+out2 <- logistic_GEM_storage(seed, tmax, N0, traitmean, traitcv, h2, bs, ds, slope)

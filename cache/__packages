@@ -3,3 +3,4 @@ knitr
 xtable
 magrittr
 deSolve
+plyr

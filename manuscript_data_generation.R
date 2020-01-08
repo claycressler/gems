@@ -1,0 +1,116 @@
+library(magrittr)
+library(parallel)
+
+## the function for simulating the GEM with storage
+source("logistic_GEM_with_storage.R")
+
+## Here is the set of GEM parameters that will remain constant across the different simulations
+traitmean <- 1.8
+traitcv <- 0.3
+h2 <- 0.75
+slope <- 0.3/1.8^2 ## from dmin = slope*bmax^2 => 0.3 = slope*1.8^2
+tmax <- 210
+N0 <- 5
+
+## RNG seeds
+set.seed(101)
+seeds <- floor(runif(50, 1, 1e7))
+
+## Parameter sets varying density dependence
+dd <- c(0.05, 0.025, 0.01, 0.005)
+
+for (val in dd) {
+    print(val)
+    ## set the density dependence
+    bs <- ds <- val
+
+    ## simulate 50 stochastic replicates of the GEM
+    mclapply(seeds,
+             function(s) logistic_GEM_storage(seed=s, tmax=tmax, N0=N0, traitmean=traitmean, traitcv=traitcv, h2=h2, bs=bs, ds=ds, slope=slope),
+             mc.cores=15
+             ) -> out
+    print("done")
+
+    ## Process the data for each of these stochastic simulations into trajectories of population size and mean and sd of the trait distribution
+    time.seq <- 0:200
+    lapply(1:length(out),
+           function(o)
+               sapply(1:length(time.seq),
+                      function(t) {
+                          ## who is alive?
+                          if (t < length(time.seq))
+                              alive <- subset(out[[o]], tBirth <= time.seq[t] & tDeath > time.seq[t])
+                          else alive <- subset(out[[o]], is.na(tDeath))
+                          ## at the current moment, how big is the population size and what are the mean and SD of the current trait distribution?
+                          c(nrow(alive), mean(alive$trait), sd(alive$trait))
+                      }) %>% t %>% as.data.frame %>% mutate(., time=time.seq, rep=o)
+           ) %>% do.call(rbind.data.frame, .) -> trajs
+    colnames(trajs)[1:3] <- c("N","mean","sd")
+
+    ## Save the output dataframes
+    saveRDS(out, file=paste0("logistic_GEM_storage_output_bs=ds=",val,".RDS"))
+    saveRDS(trajs, file=paste0("logistic_GEM_storage_trajectories_bs=ds=",val,".RDS"))
+}
+
+## Create a figure showing the mean population size trajectory and the middle 50% of observations at each time point
+plotq <- FALSE
+if (plotq) {
+par(mfcol=c(3,length(dd)), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
+for (val in dd) {
+#    out <- readRDS(file=paste0("logistic_GEM_storage_output_bs=ds=",val,".RDS"))
+    trajs <- readRDS(file=paste0("logistic_GEM_storage_trajectories_bs=ds=",val,".RDS"))
+
+    tmax <- 200
+    time.seq <- 0:(tmax-1)
+    sapply(time.seq,
+           function(t)
+               with(subset(trajs, time==t & N > 0),
+                    c(time=t,
+                      med.N=median(N),
+                      low50.N=sort(N)[floor(0.25*length(N))],
+                      high50.N=sort(N)[floor(0.75*length(N))],
+                      med.mean=median(mean),
+                      low50.mean=sort(mean)[floor(0.25*length(N))],
+                      high50.mean=sort(mean)[floor(0.75*length(N))],
+                      med.sd=median(sd),
+                      low50.sd=sort(sd)[floor(0.25*length(N))],
+                      high50.sd=sort(sd)[floor(0.75*length(N))]
+                      )
+                    )
+           ) %>% t %>% as.data.frame -> summary.trajs
+
+    ESS <- 5.4
+    ## to compute the TEA, average the population size over the last 40 timesteps
+    avgR <- tail(summary.trajs$med.N,40) %>% mean
+    s <- 0.3/1.8^2
+    TEA <- val*avgR+sqrt((val*avgR)^2 + val*avgR/s)
+        
+    plot.new()
+    plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.N), max(summary.trajs$high50.N)))
+    axis(1); axis(2); box('plot')
+    with(summary.trajs, polygon(c(time, rev(time)), c(high50.N, rev(low50.N)), col='skyblue', border=NA))
+    with(summary.trajs, lines(time, med.N, lwd=2))
+    if(val==dd[1]) mtext(side=2, 'Abundance', line=3)
+
+    plot.new()
+    plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.mean), max(summary.trajs$high50.mean)))
+    axis(1); axis(2); box('plot')
+    with(summary.trajs, polygon(c(time, rev(time)), c(high50.mean, rev(low50.mean)), col='skyblue', border=NA))
+    with(summary.trajs, lines(time, med.mean, lwd=2))
+    if(val==dd[1]) mtext(side=2, 'Trait mean', line=3)
+    abline(h=ESS, lty=2)
+    abline(h=TEA, lty=2, col=2)
+
+    plot.new()
+    plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.sd), max(summary.trajs$high50.sd)))
+    axis(1); axis(2); box('plot')
+    with(summary.trajs, polygon(c(time, rev(time)), c(high50.sd, rev(low50.sd)), col='skyblue', border=NA))
+    with(summary.trajs, lines(time, med.sd, lwd=2))
+    if(val==dd[1]) mtext(side=2, 'Trait SD', line=3)
+}
+mtext(side=1, 'Time', line=0, outer=T)
+dev.copy2pdf(file="Simulation_trajectories_for_bs=ds=0.05_0.025_0.01_0.005.pdf")    
+
+}    
+
+    
