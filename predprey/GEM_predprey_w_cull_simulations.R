@@ -1,3 +1,4 @@
+## This script defines a predator prey GEM very similar to the one in GEM_predprey_simulations.R with one addition: a step that culls the predator population to a fixed value. This introduces strong environmental stochasticity that allows us to look at TEAs (for example).
 library(magrittr)
 library(parallel)
 
