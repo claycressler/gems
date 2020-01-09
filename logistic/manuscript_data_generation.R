@@ -53,15 +53,37 @@ for (val in dd) {
 }
 
 ## Create a figure showing the mean population size trajectory and the middle 50% of observations at each time point
+
 plotq <- TRUE
 if (plotq) {
-    
+
+    library(deSolve)
+    ## Simulate the QG model for comparison
+    qg_model <- function(t, y, pars) {
+        bs <- pars["bs"]
+        ds <- pars["ds"]
+        slope <- pars["slope"]
+        V <- pars["V"]
+        
+        N <- y[1]
+        b <- y[2]
+        d <- slope*b^2
+        dNdt <- (b-bs*N)*N-(d+ds*N)*N
+        dbdt <- V*(1-2*b*slope)
+        list(c(dNdt,dbdt))
+    }
+
+    dd <- c(0.05, 0.025, 0.01, 0.005)
     par(mfcol=c(3,length(dd)), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
     for (val in dd) {
         ##out <- readRDS(file=paste0("logistic_GEM_storage_output_bs=ds=",val,".RDS")) ## uncomment this if you want to be able to do something like plotting the relationship between traits and fitness
         ## trajs just contains the trajectories themselves
         trajs <- readRDS(file=paste0("logistic_GEM_storage_trajectories_bs=ds=",val,".RDS"))
-        
+
+        ## simulate the QG trajectory
+        ## note: additive genetic variance is calculated based on the definition of heritability:
+        ## h2 = Va/Vp, where Va is the additive genetic variance and Vp is the total phenotypic variance. The initial phenotypic variance is the initial traitsd^2, so Vp=(traitmean*traitcv)^2. Then Va=h2*(traitmean*traitcv)^2.
+        qg <- ode(y=c(N=5, b=1.8), times=0:200, func=qg_model, parms=c(bs=val, ds=val, slope=0.3/1.8^2, V=0.75*(0.3*1.8)^2))
         tmax <- 200
         time.seq <- 0:(tmax-1)
         sapply(time.seq,
@@ -80,8 +102,6 @@ if (plotq) {
                           )
                         )
                ) %>% t %>% as.data.frame -> summary.trajs
-        
-        ESS <- 5.4
         ## to compute the TEA, average the population size over the last 40 timesteps
         avgR <- tail(summary.trajs$med.N,40) %>% mean
         s <- 0.3/1.8^2
@@ -93,6 +113,8 @@ if (plotq) {
         with(summary.trajs, polygon(c(time, rev(time)), c(high50.N, rev(low50.N)), col='skyblue', border=NA))
         with(summary.trajs, lines(time, med.N, lwd=2))
         if(val==dd[1]) mtext(side=2, 'Abundance', line=3)
+        ## add the qg line
+        lines(qg[,'time'], qg[,'N'], lwd=2, col='orange')
         
         plot.new()
         plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.mean), max(summary.trajs$high50.mean)))
@@ -100,15 +122,17 @@ if (plotq) {
         with(summary.trajs, polygon(c(time, rev(time)), c(high50.mean, rev(low50.mean)), col='skyblue', border=NA))
         with(summary.trajs, lines(time, med.mean, lwd=2))
         if(val==dd[1]) mtext(side=2, 'Trait mean', line=3)
-        abline(h=ESS, lty=2)
-        abline(h=TEA, lty=2, col=2)
+        abline(h=TEA, lty=3, lwd=2)
+        ## add the qg line
+        lines(qg[,'time'], qg[,'b'], lwd=2, col='orange')
         
         plot.new()
-        plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.sd), max(summary.trajs$high50.sd)))
+        plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.sd^2), max(summary.trajs$high50.sd^2)))
         axis(1); axis(2); box('plot')
-        with(summary.trajs, polygon(c(time, rev(time)), c(high50.sd, rev(low50.sd)), col='skyblue', border=NA))
-        with(summary.trajs, lines(time, med.sd, lwd=2))
-        if(val==dd[1]) mtext(side=2, 'Trait SD', line=3)
+        with(summary.trajs, polygon(c(time, rev(time)), c(high50.sd^2, rev(low50.sd^2)), col='skyblue', border=NA))
+        with(summary.trajs, lines(time, med.sd^2, lwd=2))
+        if(val==dd[1]) mtext(side=2, 'Trait variance', line=3)
+        abline(h=0.75*(0.3*1.8)^2, lwd=2, col='orange')
     }
     mtext(side=1, 'Time', line=0, outer=T)
     dev.copy2pdf(file="Simulation_trajectories_for_bs=ds=0.05_0.025_0.01_0.005.pdf")    
