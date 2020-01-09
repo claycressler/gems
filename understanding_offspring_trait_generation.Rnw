@@ -230,8 +230,12 @@ for (i in 1:length(h2.seq)) {
 \newpage
 
 Let's compare that to the case where I'm actually running a GEM to see what happens.
-In particular, I want to study how the parent-offspring regression changes at different timepoints.
+In particular, I want to study how the parent-offspring regression changes at different timepoints, and to compare these to the regression over the entire simulation run, which is something I have looked at in the past (the fact that this ``overall'' parent-offspring regression has a slope that is very close to 1 is what has sent me down this rabbit hole in the first place).
 You can see that, if you examine the regression over the entire simulation run, the heritability appears to be very high, examined over any smaller interval, it is exactly where you expect it to be!
+This is because, if you look over the entire simulation run, you are looking at literally tens of thousands of data points, spread over a wide phenotypic range.
+That is the key: the fact that the parent-offspring regression intercept is moving as the population evolves.
+At the whole-simulation scale, what you are really seeing is a bunch of parent-offspring regressions from different time points stacked up next to each other.
+At that scale, the relationship between parents and offspring will start to look one-to-one, even though the actual parent-offspring regression for any particular set of parents alive at one time has a slope that is well predicted by the supplied heritability value.
 
 <<echo=FALSE, dev='pdf', fig.keep='high', fig.width=4.5, fig.height=5.5, fig.cap="Parent-offspring regressions from a GEM simulation.">>=
 source("logistic_GEM_with_storage.R")
