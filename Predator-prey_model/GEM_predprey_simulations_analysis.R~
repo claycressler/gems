@@ -1,0 +1,75 @@
+library(magrittr)
+library(plyr)
+library(tidyr)
+library(ggplot2)
+
+for (i in 1:8) {
+    this.a0 <- 0.0005*i
+    assign(paste0("out",i), readRDS(file=paste0("predprey_GEM_K=500_a0=",this.a0,"_e=5_m=4_d=1.RDS")))
+}
+
+
+## process this "out" file
+## it is a list, where each element of the list is a single replicate run of the parameter set
+for (i in 1:8) {
+    out <- get(paste0("out",i))
+    lapply(1:length(out),
+       function(i)
+           data.frame(time=seq(1:length(out[[i]]$traits))/10-0.1,
+                      C = lapply(out[[i]]$states, function(x) x[1]) %>% unlist,
+                      P = lapply(out[[i]]$states, function(x) x[2]) %>% unlist,
+                      med_b = lapply(out[[i]]$traits, median) %>% unlist,
+                      sd_b = lapply(out[[i]]$traits, sd) %>% unlist,
+                      rep=i)
+       ) %>% do.call(rbind, .) -> out
+
+    png(file=paste0("GEM_predprey_simulations_figure_",i,".png"), height=5, width=5, units='in', res=300)
+    par(mfrow=c(2,2), mar=c(2,4,0.5,0.5), oma=rep(0.5,4))
+    plot.new()
+    plot.window(xlim=c(0, 200), ylim=c(0,500))
+    axis(1); axis(2); box('plot')
+    for (i in 1:max(out$rep))
+        with(subset(out, rep==i), lines(time,C,col=gray(0.7),lwd=0.75))
+    points(seq(0,200,0.1), sapply(seq(0,200,0.1), function(t) subset(out, time==t)$C %>% mean), col=4, lwd=2, pch=21, cex=0.25)
+    mtext(side=2, line=2.5, "Prey abundance")
+
+    plot.new()
+    plot.window(xlim=c(0, 200), ylim=c(0,500))
+    axis(1); axis(2); box('plot')
+    for (i in 1:max(out$rep))
+        with(subset(out, rep==i), lines(time,P,col=gray(0.7),lwd=0.75))
+    points(seq(0,200,0.1), sapply(seq(0,200,0.1), function(t) subset(out, time==t)$P %>% mean), col=4, lwd=2, pch=21, cex=0.25)
+    mtext(side=2, line=2.5, "Predator abundance")
+
+    plot.new()
+    plot.window(xlim=c(0, 200), ylim=c(1.8,4))
+    axis(1); axis(2); box('plot')
+    for (i in 1:max(out$rep))
+        with(subset(out, rep==i), lines(time,med_b,col=gray(0.7),lwd=0.75))
+    points(seq(0,200,0.1), sapply(seq(0,200,0.1), function(t) subset(out, time==t)$med_b%>% mean), col=4, lwd=2, pch=21, cex=0.25)
+    mtext(side=2, line=2.5, "Median birth rate")
+
+    plot.new()
+    plot.window(xlim=c(0, 200), ylim=c(0,1))
+    axis(1); axis(2); box('plot')
+    for (i in 1:max(out$rep))
+        with(subset(out, rep==i), lines(time,sd_b,col=gray(0.7),lwd=0.75))
+    points(seq(0,200,0.1), sapply(seq(0,200,0.1), function(t) subset(out, time==t)$sd_b%>% mean), col=4, lwd=2, pch=21, cex=0.25)
+    mtext(side=2, line=2.5, "Trait SD")
+    dev.off()
+
+    ## average over the last 20 time steps
+    subset(out, time > 180) %>% apply(., 2, mean)
+
+}
+
+
+
+
+    ## one more processing step to make this very easy to plot using ggplot
+    out %>% gather(., key="variable", value="value", 2:5) -> outgg
+
+    ggplot(outgg, aes(x=time, y=value, group=rep)) +
+        facet_wrap(~variable, scales="free_y") +
+        geom_line() +
+            theme_bw()

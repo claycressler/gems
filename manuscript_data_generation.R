@@ -1,3 +1,4 @@
+## This code produces versions of the figures used in the "transient evolutionary attractor" manuscript. Basically, it uses the logistic_GEM to simulate ecological and evolutionary dynamics, varying the strength of density-dependence (and thus the population size). This allows us to see how stochasticity (e.g., drift) can play an important role in both the evolutionary dynamics and the ecological dynamics.
 library(magrittr)
 library(parallel)
 
@@ -29,7 +30,6 @@ for (val in dd) {
              function(s) logistic_GEM_storage(seed=s, tmax=tmax, N0=N0, traitmean=traitmean, traitcv=traitcv, h2=h2, bs=bs, ds=ds, slope=slope),
              mc.cores=15
              ) -> out
-    print("done")
 
     ## Process the data for each of these stochastic simulations into trajectories of population size and mean and sd of the trait distribution
     time.seq <- 0:200
@@ -53,64 +53,66 @@ for (val in dd) {
 }
 
 ## Create a figure showing the mean population size trajectory and the middle 50% of observations at each time point
-plotq <- FALSE
+plotq <- TRUE
 if (plotq) {
-par(mfcol=c(3,length(dd)), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
-for (val in dd) {
-#    out <- readRDS(file=paste0("logistic_GEM_storage_output_bs=ds=",val,".RDS"))
-    trajs <- readRDS(file=paste0("logistic_GEM_storage_trajectories_bs=ds=",val,".RDS"))
-
-    tmax <- 200
-    time.seq <- 0:(tmax-1)
-    sapply(time.seq,
-           function(t)
-               with(subset(trajs, time==t & N > 0),
-                    c(time=t,
-                      med.N=median(N),
-                      low50.N=sort(N)[floor(0.25*length(N))],
-                      high50.N=sort(N)[floor(0.75*length(N))],
-                      med.mean=median(mean),
-                      low50.mean=sort(mean)[floor(0.25*length(N))],
-                      high50.mean=sort(mean)[floor(0.75*length(N))],
-                      med.sd=median(sd),
-                      low50.sd=sort(sd)[floor(0.25*length(N))],
-                      high50.sd=sort(sd)[floor(0.75*length(N))]
-                      )
-                    )
-           ) %>% t %>% as.data.frame -> summary.trajs
-
-    ESS <- 5.4
-    ## to compute the TEA, average the population size over the last 40 timesteps
-    avgR <- tail(summary.trajs$med.N,40) %>% mean
-    s <- 0.3/1.8^2
-    TEA <- val*avgR+sqrt((val*avgR)^2 + val*avgR/s)
+    
+    par(mfcol=c(3,length(dd)), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
+    for (val in dd) {
+        ##out <- readRDS(file=paste0("logistic_GEM_storage_output_bs=ds=",val,".RDS")) ## uncomment this if you want to be able to do something like plotting the relationship between traits and fitness
+        ## trajs just contains the trajectories themselves
+        trajs <- readRDS(file=paste0("logistic_GEM_storage_trajectories_bs=ds=",val,".RDS"))
         
-    plot.new()
-    plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.N), max(summary.trajs$high50.N)))
-    axis(1); axis(2); box('plot')
-    with(summary.trajs, polygon(c(time, rev(time)), c(high50.N, rev(low50.N)), col='skyblue', border=NA))
-    with(summary.trajs, lines(time, med.N, lwd=2))
-    if(val==dd[1]) mtext(side=2, 'Abundance', line=3)
-
-    plot.new()
-    plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.mean), max(summary.trajs$high50.mean)))
-    axis(1); axis(2); box('plot')
-    with(summary.trajs, polygon(c(time, rev(time)), c(high50.mean, rev(low50.mean)), col='skyblue', border=NA))
-    with(summary.trajs, lines(time, med.mean, lwd=2))
-    if(val==dd[1]) mtext(side=2, 'Trait mean', line=3)
-    abline(h=ESS, lty=2)
-    abline(h=TEA, lty=2, col=2)
-
-    plot.new()
-    plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.sd), max(summary.trajs$high50.sd)))
-    axis(1); axis(2); box('plot')
-    with(summary.trajs, polygon(c(time, rev(time)), c(high50.sd, rev(low50.sd)), col='skyblue', border=NA))
-    with(summary.trajs, lines(time, med.sd, lwd=2))
-    if(val==dd[1]) mtext(side=2, 'Trait SD', line=3)
-}
-mtext(side=1, 'Time', line=0, outer=T)
-dev.copy2pdf(file="Simulation_trajectories_for_bs=ds=0.05_0.025_0.01_0.005.pdf")    
-
+        tmax <- 200
+        time.seq <- 0:(tmax-1)
+        sapply(time.seq,
+               function(t)
+                   with(subset(trajs, time==t & N > 0),
+                        c(time=t,
+                          med.N=median(N),
+                          low50.N=sort(N)[floor(0.25*length(N))],
+                          high50.N=sort(N)[floor(0.75*length(N))],
+                          med.mean=median(mean),
+                          low50.mean=sort(mean)[floor(0.25*length(N))],
+                          high50.mean=sort(mean)[floor(0.75*length(N))],
+                          med.sd=median(sd),
+                          low50.sd=sort(sd)[floor(0.25*length(N))],
+                          high50.sd=sort(sd)[floor(0.75*length(N))]
+                          )
+                        )
+               ) %>% t %>% as.data.frame -> summary.trajs
+        
+        ESS <- 5.4
+        ## to compute the TEA, average the population size over the last 40 timesteps
+        avgR <- tail(summary.trajs$med.N,40) %>% mean
+        s <- 0.3/1.8^2
+        TEA <- val*avgR+sqrt((val*avgR)^2 + val*avgR/s)
+        
+        plot.new()
+        plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.N), max(summary.trajs$high50.N)))
+        axis(1); axis(2); box('plot')
+        with(summary.trajs, polygon(c(time, rev(time)), c(high50.N, rev(low50.N)), col='skyblue', border=NA))
+        with(summary.trajs, lines(time, med.N, lwd=2))
+        if(val==dd[1]) mtext(side=2, 'Abundance', line=3)
+        
+        plot.new()
+        plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.mean), max(summary.trajs$high50.mean)))
+        axis(1); axis(2); box('plot')
+        with(summary.trajs, polygon(c(time, rev(time)), c(high50.mean, rev(low50.mean)), col='skyblue', border=NA))
+        with(summary.trajs, lines(time, med.mean, lwd=2))
+        if(val==dd[1]) mtext(side=2, 'Trait mean', line=3)
+        abline(h=ESS, lty=2)
+        abline(h=TEA, lty=2, col=2)
+        
+        plot.new()
+        plot.window(xlim=c(0,tmax), ylim=c(min(summary.trajs$low50.sd), max(summary.trajs$high50.sd)))
+        axis(1); axis(2); box('plot')
+        with(summary.trajs, polygon(c(time, rev(time)), c(high50.sd, rev(low50.sd)), col='skyblue', border=NA))
+        with(summary.trajs, lines(time, med.sd, lwd=2))
+        if(val==dd[1]) mtext(side=2, 'Trait SD', line=3)
+    }
+    mtext(side=1, 'Time', line=0, outer=T)
+    dev.copy2pdf(file="Simulation_trajectories_for_bs=ds=0.05_0.025_0.01_0.005.pdf")    
+    
 }    
 
     
