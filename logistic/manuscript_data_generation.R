@@ -10,29 +10,31 @@ traitmean <- 1.8
 traitcv <- 0.3
 h2 <- 0.75
 slope <- 0.3/1.8^2 ## from dmin = slope*bmax^2 => 0.3 = slope*1.8^2
-tmax <- 210
+tmax <- 400
 N0 <- 5
 
 ## RNG seeds
 set.seed(101)
-seeds <- floor(runif(50, 1, 1e7))
+seeds <- floor(runif(500, 1, 1e7))
 
 ## Parameter sets varying density dependence
-dd <- c(0.05, 0.025, 0.01, 0.005)
+## dd <- c(0.05, 0.025, 0.01, 0.005)
+## Here are the values were are actually planning to use in the manuscript
+dd <- c(0.05, 0.025, 0.01)
 
 for (val in dd) {
     print(val)
     ## set the density dependence
     bs <- ds <- val
 
-    ## simulate 50 stochastic replicates of the GEM
+    ## simulate stochastic replicates of the GEM
     mclapply(seeds,
              function(s) logistic_GEM_storage(seed=s, tmax=tmax, N0=N0, traitmean=traitmean, traitcv=traitcv, h2=h2, bs=bs, ds=ds, slope=slope),
              mc.cores=15
              ) -> out
 
     ## Process the data for each of these stochastic simulations into trajectories of population size and mean and sd of the trait distribution
-    time.seq <- 0:200
+    time.seq <- 0:tmax
     lapply(1:length(out),
            function(o)
                sapply(1:length(time.seq),
@@ -54,7 +56,7 @@ for (val in dd) {
 
 ## Create a figure showing the mean population size trajectory and the middle 50% of observations at each time point
 
-plotq <- TRUE
+plotq <- FALSE
 if (plotq) {
 
     library(deSolve)
@@ -73,7 +75,8 @@ if (plotq) {
         list(c(dNdt,dbdt))
     }
 
-    dd <- c(0.05, 0.025, 0.01, 0.005)
+    ##dd <- c(0.05, 0.025, 0.01, 0.005)
+    dd <- c(0.05, 0.025, 0.01))
     par(mfcol=c(3,length(dd)), mar=c(3,3,0.5,0.5), oma=c(2,2,0,0))
     for (val in dd) {
         ##out <- readRDS(file=paste0("logistic_GEM_storage_output_bs=ds=",val,".RDS")) ## uncomment this if you want to be able to do something like plotting the relationship between traits and fitness
@@ -83,8 +86,8 @@ if (plotq) {
         ## simulate the QG trajectory
         ## note: additive genetic variance is calculated based on the definition of heritability:
         ## h2 = Va/Vp, where Va is the additive genetic variance and Vp is the total phenotypic variance. The initial phenotypic variance is the initial traitsd^2, so Vp=(traitmean*traitcv)^2. Then Va=h2*(traitmean*traitcv)^2.
-        qg <- ode(y=c(N=5, b=1.8), times=0:200, func=qg_model, parms=c(bs=val, ds=val, slope=0.3/1.8^2, V=0.75*(0.3*1.8)^2))
-        tmax <- 200
+        tmax <- 400
+        qg <- ode(y=c(N=5, b=1.8), times=0:tmax, func=qg_model, parms=c(bs=val, ds=val, slope=0.3/1.8^2, V=0.75*(0.3*1.8)^2))
         time.seq <- 0:(tmax-1)
         sapply(time.seq,
                function(t)
