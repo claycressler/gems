@@ -1,3 +1,4 @@
+## mostly for plotting results from GEM_predprey_simulations.R and GEM_predprey_w_cull_simulations.R
 library(magrittr)
 library(plyr)
 library(tidyr)
