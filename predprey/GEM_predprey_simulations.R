@@ -1,3 +1,5 @@
+## This script defines a GEM for a logistically growing prey population consumed by a predator with a Type I functional response.
+## It then simulates this GEM for a range of parameter values, looking at how stochasticity amplifies the underlying tendency to oscillate.
 library(magrittr)
 library(parallel)
 
