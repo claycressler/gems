@@ -1,3 +1,4 @@
+## This function produces ecological and evolutionary dynamics that are identical to logistic_GEM, but stores important information about every individual in the population, including its parent's traits and its lifetime reproductive success and lifespan.
 library(plyr)
 pick_individuals <- function(N0, traitmean, traitsd) {
     mu <- log(traitmean^2 / sqrt((traitsd)^2+traitmean^2))
