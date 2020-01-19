@@ -1,6 +1,6 @@
 \documentclass[12pt,reqno,final,pdftex]{amsart}\usepackage[]{graphicx}\usepackage[]{color}
-% maxwidth is the original width if it is less than linewidth
-% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
 \makeatletter
 \def\maxwidth{ %
   \ifdim\Gin@nat@width>\linewidth
@@ -136,16 +136,16 @@ Here is the code for generating new individuals.
 \end{kframe}
 \end{knitrout}
 
-I am going to generate an initial population of ``parents'' with identical traits. 
+I am going to generate an initial population of ``parents'' with identical traits.
 To do this, I am using the pick\_individuals function with N0=1000, traitmean=1, and traitsd=0.3.
 Each of these parents will give birth to a single offspring.
-Offspring generation in GEMs is a bit complex. 
+Offspring generation in GEMs is a bit complex.
 In particular, given a parent with trait $p$ and a population of parents with mean trait $\bar{p}$, and a heritability of $h^2$, the value of traitmean that will be plugged into pick\_individuals is $(1-h^2)\bar{p} + h^2p$.
 At the extremes, if $h^2=1$ then the mean trait in the offspring generation function is identical to their parent trait; if $h^2=0$, then the mean trait in the offspring generation function is equal to the population-level mean.
 The value of traitsd is calculated using $\sqrt{1-(h^2)^2}\left((1-h^2)*\sigma_0 + h^2\sigma_p\right)$, where $\sigma_0$ was the initial amount of trait variation and $\sigma_p$ is the trait variation in the current population.
-Starting out, then, $\sigma_0 = \sigma_p$. 
+Starting out, then, $\sigma_0 = \sigma_p$.
 
-What I am going to do is generating one offspring per parent for 10 different levels of heritability ranging from 0.1 to 1.0. 
+What I am going to do is generating one offspring per parent for 10 different levels of heritability ranging from 0.1 to 1.0.
 That gives me data upon which I calculate a parent-offspring regression, which is a standard way of estimating heritability in real data: heritability is the slope of the parent-offspring regression.
 I repeat this process, using the offspring from the first generation as parents for a second generation, and then again performing a parent-offspring regression.
 Finally, just for completeness, I do this for a third generation, using the offspring of the second generation as parents.
@@ -200,11 +200,48 @@ At that scale, the relationship between parents and offspring will start to look
 
 \includegraphics[width=\linewidth]{figure/unnamed-chunk-5-1} \hfill{}
 
-\caption[Parent-offspring regressions from a GEM simulation]{Parent-offspring regressions from a GEM simulation.}\label{fig:unnamed-chunk-5}
+\caption[Parent-offspring regressions from a GEM simulation with h2=0.9]{Parent-offspring regressions from a GEM simulation with h2=0.9.}\label{fig:unnamed-chunk-5}
 \end{figure}
 
 
 \end{knitrout}
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+
+\includegraphics[width=\linewidth]{figure/unnamed-chunk-6-1} \hfill{}
+
+\caption[Parent-offspring regressions from a GEM simulation with h2=0.7]{Parent-offspring regressions from a GEM simulation with h2=0.7.}\label{fig:unnamed-chunk-6}
+\end{figure}
+
+
+\end{knitrout}
+
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+
+\includegraphics[width=\linewidth]{figure/unnamed-chunk-7-1} \hfill{}
+
+\caption[Parent-offspring regressions from a GEM simulation with h2=0.5]{Parent-offspring regressions from a GEM simulation with h2=0.5.}\label{fig:unnamed-chunk-7}
+\end{figure}
+
+
+\end{knitrout}
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+
+\includegraphics[width=\linewidth]{figure/unnamed-chunk-8-1} \hfill{}
+
+\caption[Parent-offspring regressions from a GEM simulation with h2=0.3]{Parent-offspring regressions from a GEM simulation with h2=0.3.}\label{fig:unnamed-chunk-8}
+\end{figure}
+
+
+\end{knitrout}
+
 
 
 \end{document}
