@@ -1,0 +1,151 @@
+---
+title: "Logistic GEM Simulations"
+author: "Clay Cressler"
+date: "24/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I want to simulate the logistic GEM with different parameter sets to explore how the variation in parameters impacts the location of the eco-evolutionary equilibrium and the TEA that is reached by the evolving population.
+
+```{r, echo=FALSE}
+source("logistic_GEM.R")
+library(parallel)
+library(tidyverse)
+```
+```{r}
+set.seed(123947)
+seeds <- floor(runif(200, 1, 1e6))
+mclapply(seeds,
+           function(s) logistic_GEM(seed=s, dt=0.1, tmax=600, N0=5, traitmean=1.8, traitcv=0.3, h2=0.75, bs=0.075, ds=0.075, slope=0.3/1.8^2), 
+           mc.cores=5) -> out
+out0 <- out
+## for illustrative purposes, just work with the reps that didn't go extinct
+out[((lapply(out, function(x) max(x[[1]])) %>% unlist) > 590) %>% which] -> out
+
+lapply(1:length(out), 
+         function(i) data.frame(time=out[[i]][[1]], N=lapply(out[[i]][[2]], length) %>% unlist, 
+                                mean=lapply(out[[i]][[2]], mean) %>% unlist, 
+                                var=lapply(out[[i]][[2]], var) %>% unlist, 
+                                rep=i)
+        ) %>% do.call(rbind.data.frame, .) -> allreps
+mutate(allreps, time=floor(10*time)/10) %>% 
+  group_by(time) %>% 
+  summarise(N=mean(N), b=mean(mean)) -> meandata
+
+## Eco-evo equilibrium
+ecoevo <- c(5.4, 2.7/0.15)
+
+N <- seq(2, 20, 0.1)
+plot(N, 0.075*N+sqrt((0.075*N)^2+0.075*N/(0.3/1.8^2)), type='l', lwd=2, col=grey(0.6), xlab="Population size", ylab=expression(b[max]))
+points(18, 5.4, pch=21, cex=2, col=4, bg=4)
+with(meandata, lines(N, b, lwd=2, col="orange"))
+
+
+
+```
+
+Start a bit closer to a TEA:
+
+```{r}
+set.seed(123947)
+seeds <- floor(runif(200, 1, 1e6))
+mclapply(seeds,
+           function(s) logistic_GEM(seed=s, dt=0.1, tmax=400, N0=5, traitmean=2.4, traitcv=0.3, h2=0.75, bs=0.075, ds=0.075, slope=0.3/1.8^2), 
+           mc.cores=5) -> out
+## for illustrative purposes, just work with the reps that didn't go extinct
+out[((lapply(out, function(x) max(x[[1]])) %>% unlist) > 390) %>% which] -> out
+
+lapply(1:length(out), 
+         function(i) data.frame(time=out[[i]][[1]], N=lapply(out[[i]][[2]], length) %>% unlist, 
+                                mean=lapply(out[[i]][[2]], mean) %>% unlist, 
+                                var=lapply(out[[i]][[2]], var) %>% unlist, 
+                                rep=i)
+        ) %>% do.call(rbind.data.frame, .) -> allreps
+mutate(allreps, time=floor(10*time)/10) %>% 
+  group_by(time) %>% 
+  summarise(N=mean(N), b=mean(mean)) -> meandata
+
+N <- seq(2, 20, 0.1)
+plot(N, 0.075*N+sqrt((0.075*N)^2+0.075*N/(0.3/1.8^2)), type='l', lwd=2, col=grey(0.6), xlab="Population size", ylab=expression(b[max]))
+points(18, 5.4, pch=21, cex=2, col=4, bg=4)
+with(meandata, lines(N, b, lwd=2, col="orange"))
+
+
+```
+
+```{r}
+set.seed(123947)
+seeds <- floor(runif(1000, 1, 1e6))
+mclapply(seeds,
+           function(s) logistic_GEM(seed=s, dt=0.1, tmax=400, N0=5, traitmean=3.5, traitcv=0.3, h2=0.75, bs=0.075, ds=0.075, slope=0.3/1.8^2), 
+           mc.cores=5) -> out
+## for illustrative purposes, just work with the reps that didn't go extinct
+out[((lapply(out, function(x) max(x[[1]])) %>% unlist) > 390) %>% which] -> out
+
+lapply(1:length(out), 
+         function(i) data.frame(time=out[[i]][[1]], N=lapply(out[[i]][[2]], length) %>% unlist, 
+                                mean=lapply(out[[i]][[2]], mean) %>% unlist, 
+                                var=lapply(out[[i]][[2]], var) %>% unlist, 
+                                rep=i)
+        ) %>% do.call(rbind.data.frame, .) -> allreps
+mutate(allreps, time=floor(10*time)/10) %>% 
+  group_by(time) %>% 
+  summarise(N=mean(N), b=mean(mean)) -> meandata
+
+N <- seq(2, 20, 0.1)
+plot(N, 0.075*N+sqrt((0.075*N)^2+0.075*N/(0.3/1.8^2)), type='l', lwd=2, col=grey(0.6), xlab="Population size", ylab=expression(b[max]))
+points(18, 5.4, pch=21, cex=2, col=4, bg=4)
+with(meandata, lines(N, b, lwd=2, col="orange"))
+
+
+```
+
+
+```{r}
+
+set.seed(123947)
+seeds <- floor(runif(50, 1, 1e6))
+
+cvals = seq(0.04, 0.14, 0.02)
+
+for (j in 1:length(cvals)) {
+  print(cvals[j])
+  ecoevoequil <- c( 1/(4*cvals[j]*0.02), 1/(2*cvals[j]) )
+  mclapply(seeds,
+           function(s) logistic_GEM(seed=s, dt=0.1, tmax=400, N0=1/10*ecoevoequil[1], traitmean=1/5*ecoevoequil[2], traitcv=0.3, h2=0.8, bs=0.01, ds=0.01, slope=cvals[j]), 
+           mc.cores=5) -> out
+  lapply(1:length(out), 
+         function(i) data.frame(time=out[[i]][[1]], N=lapply(out[[i]][[2]], length) %>% unlist, 
+                                mean=lapply(out[[i]][[2]], mean) %>% unlist, 
+                                var=lapply(out[[i]][[2]], var) %>% unlist, 
+                                rep=i)
+        ) %>% do.call(rbind.data.frame, .) -> allreps
+  mutate(allreps,
+       time=floor(10*time)/10) %>% 
+  group_by(time) %>%
+  summarise(N=mean(N), mean=mean(mean), var=mean(var)) %>% 
+  as.data.frame -> meandata
+  assign(paste0("out",j), list(allreps, meandata))
+}
+
+
+par(mfcol=c(3,3), mar=c(4,4,0,0), oma=rep(1,4))
+with(d1, plot(time, N, type='l', xlab="Time", ylab="Population size", main="c=0.05, bs=ds=0.01", ylim=c(5, 1.2*max(N))))
+for(i in 1:40) with(subset(dat1, rep==i), lines(time, N, col=gray(0.8)))
+with(d1, lines(time, N, lwd=2))
+
+with(d1, plot(time, mean, type='l', xlab="Time", ylab="Mean bmax", ylim=c(1.5, 1.3*max(mean))))
+for(i in 1:40) with(subset(dat1, rep==i), lines(time, mean, col=gray(0.8)))
+with(d1, lines(time, mean, lwd=2))
+
+with(d1, plot(time, var, type='l', xlab="Time", ylab="Var bmax", ylim=c(0, 1.5*max(var))))
+for(i in 1:40) with(subset(dat1, rep==i), lines(time, var, col=gray(0.8)))
+with(d1, lines(time, var, lwd=2))
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
