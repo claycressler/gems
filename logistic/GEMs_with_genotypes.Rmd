@@ -207,7 +207,11 @@ var(gen1$etrait)/var(gen1$itrait) ## this is pretty close to the expected herita
 
 ## What is happening is that the individuals who have big expected phenotypes are expected to have big offspring, and that overwhelms the fact that large individuals tend to have smaller offspring. Or maybe the problem is that we're working with a lognormal, rather than normal, distribution?
 
-
+## What if you transform the data so that it is normally distributed, and then compare the traits of gen1 and gen2?
+## This suggestion comes from Derek Roff, Heredity 86, 404-411 (2001). In the abstract, he points out that, "The estimation of heritabilities...is based on the assumption that the trait distributions are normal. When the distributions are not normal it is advisable to transform the data to produce normality."
+plot(log(gen1$itrait), log(gen2$itrait))
+## Yes! This works. Now we have a slope of 0.75, as expected.
+lm(log(gen2$itrait)~log(gen1$itrait)) %>% summary
 
 
 ## generate the first generation of individuals
