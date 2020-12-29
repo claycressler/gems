@@ -104,6 +104,53 @@ pick_individuals <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NULL, V
   }
   return(results)
 }
+
+
+pick_individuals_norm <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NULL, Vm=NULL) {
+  if (is.null(Vg) & is.null(Ve)) stop("You must specify either Vg or Ve")
+  else if (!is.null(Vg) & is.null(Ng)) stop("You must specify a number of genotypes to generate")
+  else if (!is.null(Ng) & is.null(Vg)) stop("You must specify an additive genetic variance to generate genotypes")
+  
+  if (!is.null(m) & is.null(Vm)) stop ("You must specify a mutational variance")
+  
+  if (!is.null(Vg)) { ## generating new genotypes
+    ## Generate Ng new genotypes (expected phenotypes) 
+    genotypic.means <- rnorm(Ng, mean=expected.trait, sd=sqrt(Vg))
+     ## If length(Ni) = Ng, generate Ni[j] individuals per genotype
+    if (length(Ni)==Ng)
+      lapply(1:Ng, function(j) {
+        data.frame(etrait=genotypic.means[j], itrait=rnorm(Ni[j], mean=genotypic.means[j], sd=sqrt(Ve)))
+      }) %>% do.call("rbind.data.frame",.) -> results
+    else {
+      ## Put floor(Ni/Ng) into Ng groups
+      Ni.new <- rep(floor(Ni/Ng), Ng)
+      ## If Ni is a multiple of Ng, you're done. 
+      ## If not, add an individual to each of the first Ni%%Ng groups
+      if (Ni%%Ng!=0) Ni.new[1:(Ni%%Ng)] <- Ni.new[1:(Ni%%Ng)]+1
+      ## this formulation deals with the possibility that Ni individuals cannot be evenly subdivided into Ng genotypes
+      Ni <- Ni.new
+      
+      lapply(1:Ng, function(j) {
+        data.frame(etrait=genotypic.means[j], itrait=rnorm(Ni[j], mean=genotypic.means[j], sd=sqrt(Ve)))
+      }) %>% do.call("rbind.data.frame",.) -> results
+    }
+  }
+  else if (is.null(Vg) & !is.null(Ve)) { ## generating individuals of the same genotype (subject to mutation)
+    ## does a mutation occur?
+    mutate <- FALSE
+    if (!is.null(m)) mutate <- (runif(1) < m)
+    if (mutate) { ## mutation occurs, so change the expected phenotype of this individual
+      expected.trait <- rlnorm(1, mean=expected.trait, sd=sqrt(Vm))
+    }
+    ## draw new individuals
+    trait <- rnorm(Ni, mean=expected.trait, sd=sqrt(Ve))
+    results <- data.frame(etrait=expected.trait, itrait=trait)
+  }
+  return(results)
+}
+
+
+
 ```
 
 To see whether this function works, I will generate some genotypes and individuals, then carry out one generation of reproduction for all individuals and look at the parent-offspring regression to make sure everything looks good.
@@ -132,5 +179,40 @@ gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call(
 ## plot a parent-offspring regression using the actual genotypes
 plot(gen1$itrait, gen2$itrait)
 abline(0,1, col=2)
+
+## individuals in gen1 with itrait > etrait should have offspring whose itrait is smaller than their's (on average)
+## is that true? It does not appear to be.
+diff1 <- gen1$itrait-gen1$etrait
+diff2 <- gen2$itrait-gen2$etrait
+lm(diff2~diff1) %>% summary
+
+## Try doing this a different way. Generate 1000 individuals, all with the same expected phenotype. Then generate another 1000, all with the same expected phenotype. Treat the first set as generation 1, and the second set as generation 2. What is the relationship between the phenotypes now?
+gen1 <- pick_individuals(2, 1000, Ve)
+gen2 <- pick_individuals(2, 1000, Ve)
+plot(gen1$itrait, gen2$itrait)
+## This looks better
+
+## Essentially no relationship between the actual phenotype of the parent and the actual phenotype of the offspring, which is as it should be
+lm(gen2$itrait~gen1$itrait) %>% summary
+
+## What is happening is that the individuals who have big expected phenotypes are expected to have big offspring, and that overwhelms the fact that large individuals tend to have smaller offspring. 
+
+
+## generate the first generation of individuals
+gen1 <- pick_individuals_norm(trait, Ni, Ve, Ng, Vg)
+plot(gen1$etrait, gen1$itrait)
+abline(0,1, col=2)
+
+## Now, generate a second generation by assuming that each of these individuals reproduces, producing a single offspring
+gen2 <- lapply(gen1$etrait, function(t) pick_individuals_norm(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
+
+## plot a parent-offspring regression using the actual genotypes
+## This actually works! The slope of the regression is 0.75, as it should be.
+## So the problem is with the lognormal distribution. Heritability is not Vg/(Ve+Vg) if the traits are not normally distributed.
+plot(gen1$itrait, gen2$itrait)
+abline(0,1, col=2)
+lm(gen2$itrait~gen1$itrait) %>% summary
+
+## Maybe this is because the variance of a lognormally distributed trait is not actually Vg, but depends on the mean.
 
 ```
