@@ -195,7 +195,19 @@ plot(gen1$itrait, gen2$itrait)
 ## Essentially no relationship between the actual phenotype of the parent and the actual phenotype of the offspring, which is as it should be
 lm(gen2$itrait~gen1$itrait) %>% summary
 
-## What is happening is that the individuals who have big expected phenotypes are expected to have big offspring, and that overwhelms the fact that large individuals tend to have smaller offspring. 
+## generate the first generation of individuals
+gen1 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
+## Now, generate a second generation by assuming that each of these individuals reproduces, producing a single offspring
+gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
+
+## Compute the genetic and total phenotypic variance in each generation, and the heritability
+var(gen1$etrait)
+var(gen1$itrait)
+var(gen1$etrait)/var(gen1$itrait) ## this is pretty close to the expected heritability
+
+## What is happening is that the individuals who have big expected phenotypes are expected to have big offspring, and that overwhelms the fact that large individuals tend to have smaller offspring. Or maybe the problem is that we're working with a lognormal, rather than normal, distribution?
+
+
 
 
 ## generate the first generation of individuals
