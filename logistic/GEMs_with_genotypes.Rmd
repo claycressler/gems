@@ -5,6 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
 I want to consider putting actual genotypes into a GEM. 
@@ -106,6 +107,89 @@ pick_individuals <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NULL, V
 }
 
 
+
+```
+
+To see whether this function works, I will generate some genotypes and individuals. 
+Fig. 1 shows the results of generating 1000 individuals, across 50 genotypes, assuming a lognormally distributed trait with mean 2, additive genetic variance $V_g=0.1$, and heritability $h^2=V_g/(V_e+V_g)=0.75$ (yielding a non-genetic phenotypic variance $V_e = 0.0133$).
+
+```{r, fig.height=4, fig.width=4, units='in', res=300, fig.cap="The relationship between expected phenotype (i.e., the genotype) and the actual phenotypes of 1000 individuals across 50 genotypes."}
+## specify a heritability and additive genetic variance
+h2 = 0.75
+Vg = 0.1
+## calculate the Ve from these
+Ve = Vg*(1-h2)/h2
+
+## specify an initial population-level trait mean
+trait <- 2
+
+## specify an initial number of genotypes and individuals
+Ng <- 50
+Ni <- 1000
+
+## for now, do not specify a mutation rate or mutational variance
+
+## generate the first generation of individuals
+gen1 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
+plot(gen1$etrait, gen1$itrait, xlab="Expected phenotype", ylab="Actual phenotype")
+
+```
+
+To verify that the heritability is functioning as expected, I will compute the heritability in a slightly different way: as the slope of a parent-offspring regression.
+Since heritability is less than 1, individuals will be born with phenotypes that are larger or smaller than expected.
+However, across generations, individuals with larger-than-expected phenotypes will give birth to offspring with traits a bit closer to the expectation, as will individuals with smaller-than-expected phenotypes.
+This 'regression to the mean' will produce a parent-offspring regression with a slope less than one: in particular, this slope is another way to measure heritability, and so it should be close to 0.75 (in this case).
+To test this, I will use the individuals generated above as the parents of a new generation of offspring, and I will regress the actual (not expected) phenotypes of the parents against the actual phenotypes of the offspring.
+Fig. 2 shows the results, confirming that the regression slope is similar to the heritability (any discrepancy is just due to noise - for example, if you increase to 100,000 individuals across 1,000 genotypes, the slope of the regression is *exactly* 0.75, as expected).
+```{r, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Parent-offspring regression for a The solid blue line gives the one-to-one line, and the dashed orange line gives the results of a regression of the parental phenotype on the offspring phenotype (the text gives the slope of this regression line)."}
+
+gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
+
+## plot a parent-offspring regression using the actual genotypes
+plot(gen1$itrait, gen2$itrait, xlab='Parent', ylab='Offspring')
+abline(0,1, col='lightblue', lwd=2)
+abline(lm(gen2$itrait~gen1$itrait), col='orange', lwd=2, lty=2)
+legend(x='topleft', paste0('slope=',signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)), bty='n')
+
+# gen1 <- pick_individuals(trait, 1e5, Ve, 1e3, Vg)
+# gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
+# signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)
+
+```
+
+Just to fully verify that this is working, here are the results of parent-offspring regressions for 10,000 individuals across 100 genotypes, with heritabilities ranging from 0.1 to 0.9.
+```{r, fig.height=6, fig.width=6, units='in', res=300, fig.cap="Parent-offspring regressions for varying heritabilities."}
+par(mfrow=c(3,3), mar=c(2,2,0.5,0.5), oma=c(2,2,0,0))
+for (h in seq(0.1,0.9,0.1)) {
+  ## specify a heritability and additive genetic variance
+  h2 = h
+  Vg = 0.1
+  ## calculate the Ve from these
+  Ve = Vg*(1-h2)/h2
+
+  ## specify an initial population-level trait mean
+  trait <- 2
+  
+  ## specify an initial number of genotypes and individuals
+  Ng <- 100
+  Ni <- 10000
+
+  ## generate the first generation of individuals
+  gen1 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
+  gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
+  plot(gen1$itrait, gen2$itrait, xlab='', ylab='')
+abline(0,1, col='lightblue', lwd=2)
+abline(lm(gen2$itrait~gen1$itrait), col='orange', lwd=2, lty=2)
+legend(x='topleft', paste0('slope=',signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)), bty='n')
+}
+mtext(side=1, outer=TRUE, "Parent")
+mtext(side=2, outer=TRUE, "Offspring")
+  
+```
+
+
+```{r}
+
 pick_individuals_norm <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NULL, Vm=NULL) {
   if (is.null(Vg) & is.null(Ve)) stop("You must specify either Vg or Ve")
   else if (!is.null(Vg) & is.null(Ng)) stop("You must specify a number of genotypes to generate")
@@ -148,87 +232,5 @@ pick_individuals_norm <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NU
   }
   return(results)
 }
-
-
-
-```
-
-To see whether this function works, I will generate some genotypes and individuals, then carry out one generation of reproduction for all individuals and look at the parent-offspring regression to make sure everything looks good.
-```{r}
-## specify a heritability and additive genetic variance
-h2 = 0.75
-Vg = 0.1
-## calculate the Ve from these
-Ve = Vg*(1-h2)/h2
-
-## specify an initial population-level trait mean
-trait <- 2
-
-## specify an initial number of genotypes and individuals
-Ng <- 100
-Ni <- 1000
-
-## for now, do not specify a mutation rate or mutational variance
-
-## generate the first generation of individuals
-gen1 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
-
-## Now, generate a second generation by assuming that each of these individuals reproduces, producing a single offspring
-gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
-
-## plot a parent-offspring regression using the actual genotypes
-plot(gen1$itrait, gen2$itrait)
-abline(0,1, col=2)
-
-## individuals in gen1 with itrait > etrait should have offspring whose itrait is smaller than their's (on average)
-## is that true? It does not appear to be.
-diff1 <- gen1$itrait-gen1$etrait
-diff2 <- gen2$itrait-gen2$etrait
-lm(diff2~diff1) %>% summary
-
-## Try doing this a different way. Generate 1000 individuals, all with the same expected phenotype. Then generate another 1000, all with the same expected phenotype. Treat the first set as generation 1, and the second set as generation 2. What is the relationship between the phenotypes now?
-gen1 <- pick_individuals(2, 1000, Ve)
-gen2 <- pick_individuals(2, 1000, Ve)
-plot(gen1$itrait, gen2$itrait)
-## This looks better
-
-## Essentially no relationship between the actual phenotype of the parent and the actual phenotype of the offspring, which is as it should be
-lm(gen2$itrait~gen1$itrait) %>% summary
-
-## generate the first generation of individuals
-gen1 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
-## Now, generate a second generation by assuming that each of these individuals reproduces, producing a single offspring
-gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
-
-## Compute the genetic and total phenotypic variance in each generation, and the heritability
-var(gen1$etrait)
-var(gen1$itrait)
-var(gen1$etrait)/var(gen1$itrait) ## this is pretty close to the expected heritability
-
-## What is happening is that the individuals who have big expected phenotypes are expected to have big offspring, and that overwhelms the fact that large individuals tend to have smaller offspring. Or maybe the problem is that we're working with a lognormal, rather than normal, distribution?
-
-## What if you transform the data so that it is normally distributed, and then compare the traits of gen1 and gen2?
-## This suggestion comes from Derek Roff, Heredity 86, 404-411 (2001). In the abstract, he points out that, "The estimation of heritabilities...is based on the assumption that the trait distributions are normal. When the distributions are not normal it is advisable to transform the data to produce normality."
-plot(log(gen1$itrait), log(gen2$itrait))
-## Yes! This works. Now we have a slope of 0.75, as expected.
-lm(log(gen2$itrait)~log(gen1$itrait)) %>% summary
-
-
-## generate the first generation of individuals
-gen1 <- pick_individuals_norm(trait, Ni, Ve, Ng, Vg)
-plot(gen1$etrait, gen1$itrait)
-abline(0,1, col=2)
-
-## Now, generate a second generation by assuming that each of these individuals reproduces, producing a single offspring
-gen2 <- lapply(gen1$etrait, function(t) pick_individuals_norm(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
-
-## plot a parent-offspring regression using the actual genotypes
-## This actually works! The slope of the regression is 0.75, as it should be.
-## So the problem is with the lognormal distribution. Heritability is not Vg/(Ve+Vg) if the traits are not normally distributed.
-plot(gen1$itrait, gen2$itrait)
-abline(0,1, col=2)
-lm(gen2$itrait~gen1$itrait) %>% summary
-
-## Maybe this is because the variance of a lognormally distributed trait is not actually Vg, but depends on the mean.
 
 ```
