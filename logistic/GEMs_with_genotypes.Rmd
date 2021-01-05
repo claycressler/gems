@@ -1,33 +1,42 @@
 ---
 title: "GEMs with true genotypes"
-output: html_document
+output: bookdown::html_document2
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      dev=c('png','tiff'),
+                      fig.path='figures/')
 library(tidyverse)
 ```
 
 I want to consider putting actual genotypes into a GEM. 
 How would that work?
-The easiest way, I think, is to allow users to specify the additive genetic variance in the evolving trait and an initial number of individuals.
-For simplicity, and to make the new version most parallel with the old version, each individual will be assumed to have a unique genotype.
-Thus, each genotype is characterized by what I will call an "expected phenotype."
-The user can also specify a heritability that determines how "faithfully" a genotype passes on its expected phenotype.
+The easiest way, I think, is to have users specify an initial trait mean, an initial additive genetic variance in this trait, a heritability, and an initial number of genotypes and individuals.
+Each genotype will be characterized by what I will call an "expected phenotype."
+The heritability determines how "faithfully" a genotype passes on its expected phenotype.
 When heritability is 1, offspring inherit the phenotype of their parent, which is by definition equal to the expected phenotype of the parent's genotype.
 If, however, heritability is less than one, then offspring have a phenotype that is different from the expected phenotype, given their genotype.
 That is, each individual is actually characterized by two traits: the phenotype they have (which determines their ecological interactions), and the phenotype they were expected to have, given their genotype.
 What each individual passes on when they reproduce is not their *actual* phenotype, but their *expected* phenotype.
+
 How do we use the user-specified heritability and initial additive genetic variance to generate new individuals?
-We rely on the definition of heritability as the proportion of total phenotypic variance that is due to additive genetic variance: $H^2 = V_g/(V_g+V_e)$, where $V_g$ is the additive genetic variance and $V_e$ is the phenotypic variance due to the "environment."
+We rely on the definition of heritability as the proportion of total phenotypic variance that is due to additive genetic variance: $h^2 = V_g/(V_g+V_e)$, where $V_g$ is the additive genetic variance and $V_e$ is the phenotypic variance due to the "environment."
 Thus, given a heritability and initial additive genetic variance, we can calculate the phenotypic variance that is not heritable.
 Then when an individual gives birth, the phenotype of its offspring is determined by drawing from a distribution with a mean equal to the genotypic mean, and variance given by $V_e$.
-For evolution to occur in this new version of GEM, we have to a way to generate novel genetic variation.
+
+For evolution to occur in this new version of GEM, we must also have a way to generate novel genetic variation.
 We do this by the inclusion of a mutation rate: when an individual reproduces, with some small probability, its expected (genotypic) phenotype can change.
-It's new expected phenotype is given by drawing from a distribution with mean equal to the current expected genotypic mean, and variance given by the mutational variance.
-So the new model is entirely specified by a new "pick_individuals" function.
-The function will be slightly flexible to accomodate whether the user is generating new *genotypes* (in which case, the user must specify an additive genetic variance $V_g$) or new *individuals* (in which case, the user must specify an environmental variance $V_e$, a probability of mutation $\mu$, and a mutational variance $V_\mu$). 
-In R, this can be achieved by the following:
+It's new expected phenotype is given by drawing from a distribution with mean equal to the current expected genotypic mean, and variance given by a mutational variance ($V_\mu$).
+
+Given these considerations, I have written a new "pick_individuals" function.
+The function can accomodate the situation where new *genotypes* are being generated, such as at the beginning of any GEM simulation (in which case, the user must specify an additive genetic variance $V_g$ and a number of genotypes to generate) or new *individuals*, which occurs both at the beginning and during a GEM simulation (in which case, the user must specify an environmental variance $V_e$, a number of individuals to generate, a probability of mutation $\mu$, and a mutational variance $V_\mu$). 
+
+Thus, at the outset of a simulation, the function will generate $N_g$ new genotypes, each with an expected phenotype that is given by drawing from a distribution with mean equal to the the initial population mean phenotype and a variance given by $V_g$.
+The function then generates $N_i/N_g$ individuals per genotype; each individual within a genotype is generated by drawing from a distribution with a mean equal to the expected phenotype for the genotype and a variance given by $V_e$.
+During a simulation run, new individuals are generated at reproduction in the same way; new genotypes are created by mutation by drawing from a distribution with a mean equal to the expected phenotype and a variance given by $V_\mu$.
+
+
 ```{r}
 ## expected.trait is the expected phenotype of the individuals to generate
 ## 
@@ -110,10 +119,9 @@ pick_individuals <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NULL, V
 
 ```
 
-To see whether this function works, I will generate some genotypes and individuals. 
-Fig. 1 shows the results of generating 1000 individuals, across 50 genotypes, assuming a lognormally distributed trait with mean 2, additive genetic variance $V_g=0.1$, and heritability $h^2=V_g/(V_e+V_g)=0.75$ (yielding a non-genetic phenotypic variance $V_e = 0.0133$).
+To see how this function works, Fig. \@ref(fig:etrait-itrait) shows the phenotypes of 1000 individuals, across 50 genotypes, assuming a lognormally distributed trait with mean 2, additive genetic variance $V_g=0.1$, and heritability $h^2=V_g/(V_e+V_g)=0.75$ (yielding a non-genetic phenotypic variance $V_e = 0.0133$).
 
-```{r, fig.height=4, fig.width=4, units='in', res=300, fig.cap="The relationship between expected phenotype (i.e., the genotype) and the actual phenotypes of 1000 individuals across 50 genotypes."}
+```{r etrait-itrait, fig.height=4, fig.width=4, units='in', res=300, fig.cap="The relationship between expected phenotype (i.e., the genotype) and the actual phenotypes of 1000 individuals across 50 genotypes."}
 ## specify a heritability and additive genetic variance
 h2 = 0.75
 Vg = 0.1
@@ -131,6 +139,8 @@ Ni <- 1000
 
 ## generate the first generation of individuals
 gen1 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
+## structure of the output from the pick_individuals function
+head(gen1, 20)
 plot(gen1$etrait, gen1$itrait, xlab="Expected phenotype", ylab="Actual phenotype")
 
 ```
@@ -140,8 +150,8 @@ Since heritability is less than 1, individuals will be born with phenotypes that
 However, across generations, individuals with larger-than-expected phenotypes will give birth to offspring with traits a bit closer to the expectation, as will individuals with smaller-than-expected phenotypes.
 This 'regression to the mean' will produce a parent-offspring regression with a slope less than one: in particular, this slope is another way to measure heritability, and so it should be close to 0.75 (in this case).
 To test this, I will use the individuals generated above as the parents of a new generation of offspring, and I will regress the actual (not expected) phenotypes of the parents against the actual phenotypes of the offspring.
-Fig. 2 shows the results, confirming that the regression slope is similar to the heritability (any discrepancy is just due to noise - for example, if you increase to 100,000 individuals across 1,000 genotypes, the slope of the regression is *exactly* 0.75, as expected).
-```{r, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Parent-offspring regression for a The solid blue line gives the one-to-one line, and the dashed orange line gives the results of a regression of the parental phenotype on the offspring phenotype (the text gives the slope of this regression line)."}
+Fig. \@ref(fig:parent-offspring) shows the results, confirming that the regression slope is similar to the heritability (any discrepancy is just due to noise - for example, if you increase to 100,000 individuals across 1,000 genotypes, the slope of the regression is *exactly* 0.75, as expected).
+```{r parent-offspring, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Parent-offspring regression when heritability is 0.75. The solid blue line gives the one-to-one line, and the dashed orange line gives the results of a regression of the parental phenotype on the offspring phenotype; the legend gives the slope of this regression line."}
 
 gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
 
@@ -150,15 +160,18 @@ plot(gen1$itrait, gen2$itrait, xlab='Parent', ylab='Offspring')
 abline(0,1, col='lightblue', lwd=2)
 abline(lm(gen2$itrait~gen1$itrait), col='orange', lwd=2, lty=2)
 legend(x='topleft', paste0('slope=',signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)), bty='n')
+```
 
-# gen1 <- pick_individuals(trait, 1e5, Ve, 1e3, Vg)
-# gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
-# signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)
+```{r, echo=FALSE, eval=FALSE}
+## Verifying that, for larger sample sizes, the observed heritability (slope) is equal to the expectation
+gen1 <- pick_individuals(trait, 1e5, Ve, 1e3, Vg)
+gen2 <- lapply(gen1$etrait, function(t) pick_individuals(t, 1, Ve)) %>% do.call("rbind.data.frame", .)
+signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)
 
 ```
 
-Just to fully verify that this is working, here are the results of parent-offspring regressions for 10,000 individuals across 100 genotypes, with heritabilities ranging from 0.1 to 0.9.
-```{r, fig.height=6, fig.width=6, units='in', res=300, fig.cap="Parent-offspring regressions for varying heritabilities."}
+Just to fully verify that this is working, here are the results of parent-offspring regressions for 10,000 individuals across 100 genotypes, with heritabilities ranging from 0.1 to 0.9 (Fig. \@ref(fig:vary-heritability)).
+```{r vary-heritability, echo=FALSE, fig.height=8, fig.width=8, units='in', res=300, fig.cap="Parent-offspring regressions for heritability ranging from 0.1 to 0.9. As before the blue line is the one-to-one line and the orange line is the linear regression, with the slope of this regression given in the legend."}
 par(mfrow=c(3,3), mar=c(2,2,0.5,0.5), oma=c(2,2,0,0))
 for (h in seq(0.1,0.9,0.1)) {
   ## specify a heritability and additive genetic variance
@@ -180,15 +193,313 @@ for (h in seq(0.1,0.9,0.1)) {
   plot(gen1$itrait, gen2$itrait, xlab='', ylab='')
 abline(0,1, col='lightblue', lwd=2)
 abline(lm(gen2$itrait~gen1$itrait), col='orange', lwd=2, lty=2)
-legend(x='topleft', paste0('slope=',signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)), bty='n')
+legend(x='topleft', paste0('slope=',signif(coef(lm(gen2$itrait~gen1$itrait))[2],2)), bty='n', col='orange')
 }
 mtext(side=1, outer=TRUE, "Parent")
 mtext(side=2, outer=TRUE, "Offspring")
   
 ```
 
+To see how this change affects eco-evolutionary dynamics, I will redo the analyses of the logistic model, 
+\begin{equation*}
+\frac{dN}{dt} = (b-b_n N) N - (d(b)+d_n N) N
+\end{equation*}
+where the minimum per-capita mortality rate $d(b)$ is an increasing function of the maximum per-capita birth rate $b$. 
+I have shown previously that there is an evolutionarily stable birth rate $\hat{b}$ that maximizes fitness when $m''(b) > 0$ (i.e., mortality is an accelerating function of birth rate). 
+We have assumed previously that this trade-off takes the form $d(b) = sb^2$. 
+In this case, the ES $\hat{b}$ is given by 
+\begin{align*}
+\frac{\partial}{\partial b}\left(\frac{1}{N}\frac{dN}{dt}\right) &= 0, \\
+\frac{\partial}{\partial b}\left(b - 2 b_n N - d(b) - 2 d_n N\right) &= 0, \\
+1 - d'(b) &= 0, \\
+1 - 2 s b &= 0, \\
+b &= \frac{1}{2 s}.
+\end{align*}
+The ecological equilibrium is given by 
+\begin{align*}
+\frac{dN}{dt} &= 0, \\
+(b - b_n N) - (d(b) + d_n N) &= 0, \\
+b - d(b) &= (b_n + d_n) N, \\
+N &= \frac{b - d(b)}{b_n + d_n}.
+\end{align*}
+At the ES $\hat{b} = 1/2s$, the ecological equilibrium is 
+\begin{equation*}
+\hat{N} &= \frac{\frac{1}{2s} - \frac{1}{4s}}{b_n + d_n}, \\
+\hat{N} &= \frac{1}{4s(b_n+d_n)}.
+\end{equation*}
+
+I have written two versions of the GEM algorithm.
+The first version returns only summary statistics and is relatively fast-running.
+The second version returns information on every individual ever created so that, e.g., individual fitness can be calculated or the full distribution of phenotypes at any timestep can be recreated.
 
 ```{r}
+
+## This version of the function is relatively fast, but only returns a dataframe with summary statistics every dt timesteps
+logistic_GEM_summarized <- function(dt, tmax, Ni, Ng, trait, Vg, h2, m=NULL, Vm=NULL, bn, dn, s, seed=NULL) {
+  
+  ## set RNG seed
+  if (!is.null(seed)) set.seed(seed)
+  else {
+    seed <- floor(runif(1,1,1e5))
+    print(paste("RNG seed is", seed))
+    set.seed(seed)
+  }
+  
+  ## initialize counter
+  i <- 1
+  ## initialize time
+  t <- 0
+  lastrecordtime <- t ## the last timepoint that was recorded (only useful if summarize=TRUE)
+  ## initialize population
+  ## calculate Ve from Vg and h2
+  Ve <- Vg*(1-h2)/h2
+
+  N0 <- pick_individuals(trait, Ni, Ve, Ng, Vg)
+  
+  ## Initial storage (depends on value of 'summarize')
+  output <- data.frame(time=seq(0,tmax,dt),
+                         N=rep(0, tmax/dt+1), ## population size
+                         mean.etrait=rep(0,tmax/dt+1), ## mean genotypic trait value
+                         var.etrait=rep(0,tmax/dt+1), ## additive genetic variance
+                         mean.itrait=rep(0,tmax/dt+1), ## mean individual trait value
+                         var.itrait=rep(0,tmax/dt+1)) ## total phenotypic variance
+  output[i,2:6] <- c(nrow(N0), mean(N0$etrait), var(N0$etrait), mean(N0$itrait), var(N0$itrait))
+
+  ## NOTE: it is much faster to work with the current system state recorded as a list, rather than dataframe, as list elements can be modified "in place", whereas adding or removing rows from a dataframe requires that the entire dataframe be recreated each time, a serious computational time cost
+  currentstate <- split(N0, seq(nrow(N0)))
+
+  while (t < tmax & length(currentstate) > 0) { ## run until tmax or until the population goes extinct
+    N <- length(currentstate)
+    ## Per-capita rates for each individual
+    ## birth
+    b <- lapply(currentstate, function(l) l$itrait) %>% unlist
+    brates <- (b - bn*N)
+    ## death (specified by tradeoff between birth and death)
+    d <- s*b^2
+    drates <- (d + dn*N)
+    rates <- c(brates,drates)
+    
+    ## When will the next event happen?
+    timestep <-  rexp(1, rate=sum(rates))
+    t <- t + timestep
+
+    ## If the new time is greater than lastrecordtime + dt, record the state of the system *before* it changes (because, e.g., if the next event occurs at t = 3.03 then the current state is the system state time time t = 3)
+    if (t > (lastrecordtime + dt)) {
+      ## If the timestep is large enough, it is possible that multiple system states need to be recorded. floor((t-lastrecordtime)/dt) tells how many system states to record. Most often this will just be one.
+      df <- do.call("rbind.data.frame", currentstate)
+      for (j in (i+1):(i+floor((t-lastrecordtime)/dt))) 
+        output[j,2:6] <- c(nrow(df), mean(df$etrait), var(df$etrait), mean(df$itrait), var(df$itrait))
+      i <- i + floor((t-lastrecordtime)/dt)
+      lastrecordtime <- floor(t)
+    }
+  
+    ## Determine the event
+    ## wheel of fortune
+    wheel <- cumsum(rates)/sum(rates)
+    rand <- runif(1)
+    ## who does the event happen to?
+    ind <- ifelse(min(which(rand < wheel)) <= N,
+                  min(which(rand < wheel)),
+                  min(which(rand < wheel))-N)
+    ## which event happens?
+    if (rand <= sum(brates)/sum(rates)) ## birth
+      currentstate[[N+1]] <- pick_individuals(currentstate[[ind]]$etrait, Ni=1, Ve=Ve, m=m, Vm=Vm)
+    else ## death
+      currentstate <- currentstate[-ind]
+    
+  }
+
+  return(output)
+}
+
+logistic_GEM_full_information <- function(tmax, Ni, Ng, trait, Vg, h2, m=NULL, Vm=NULL, bn, dn, s, seed=NULL) {
+  
+  ## set RNG seed
+  if (!is.null(seed)) set.seed(seed)
+  else {
+    seed <- floor(runif(1,1,1e5))
+    print(paste("RNG seed is", seed))
+    set.seed(seed)
+  }
+  
+  ## initialize time
+  t <- 0
+  ## initialize population
+  ## calculate Ve from Vg and h2
+  Ve <- Vg*(1-h2)/h2
+  
+  ## add information about each individual, including a unique ID, birth time, death time, and number of offspring
+  mutate(pick_individuals(trait, Ni, Ve, Ng, Vg), 
+         ID=1:Ni,
+         btime=0,
+         dtime=NA,
+         noff=0) -> output
+  output <- split(output, seq(nrow(output)))
+  nextID <- Ni+1
+  
+  while (t < tmax & length(output) > 0) { ## run until tmax or until the population goes extinct
+    ## currentstate is all individuals that are still alive
+    currentstate <- output[(lapply(output, function(o) is.na(o$dtime)) %>% unlist %>% which)]
+    ## current population size
+    N <- length(currentstate)
+    ## Per-capita rates for each living individual
+    ## birth
+    b <- lapply(currentstate, function(l) l$itrait) %>% unlist
+    brates <- (b - bn*N)
+    ## death (specified by tradeoff between birth and death)
+    d <- s*b^2
+    drates <- (d + dn*N)
+    rates <- c(brates,drates)
+    
+    ## Increment time
+    t <- t + rexp(1, rate=sum(rates))
+
+    ## wheel of fortune
+    wheel <- cumsum(rates)/sum(rates)
+    rand <- runif(1)
+    ## who does the event happen to?
+    ind <- ifelse(min(which(rand < wheel)) <= N,
+                  min(which(rand < wheel)),
+                  min(which(rand < wheel))-N)
+    ## which event happens?
+    if (rand <= sum(brates)/sum(rates)) {## birth
+      ## get the ID of the individual who is reproducing (which corresponds to its position in output) and increment noff
+      output[[currentstate[[ind]]$ID]]$noff <- output[[currentstate[[ind]]$ID]]$noff+1
+      ## add another individual to output with a new ID
+      output[[nextID]] <- mutate(pick_individuals(currentstate[[ind]]$etrait, Ni=1, Ve=Ve, m=m, Vm=Vm),
+                                  ID=nextID,
+                                  btime=t,
+                                  dtime=NA,
+                                  noff=0)
+      nextID <- nextID+1
+    }
+    else ## death
+      ## get the ID of the individual who is dying (which corresponds to its position in output) and set that individual's dtime equal to the current time
+      output[[currentstate[[ind]]$ID]]$dtime <- t
+
+  }
+  ## convert the output list back into a data.frame and return it
+  return(do.call("rbind.data.frame", output))
+}
+```
+
+Let's test to make sure that both functions return identical outputs (since they should).
+
+```{r, echo=TRUE, eval=FALSE}
+
+## Specify heritability and additive genetic variance
+h2 = 0.75
+Vg = 0.1
+## specify an initial population-level trait mean
+trait <- 2
+## specify an initial number of genotypes and individuals
+Ng <- 25
+Ni <- 25
+## mutation
+m <- 1e-3
+Vm <- 0.05
+## length of time to run
+tmax <- 200
+dt <- 1
+## key eco-evolutionary parameters
+bn <- 0.01
+dn <- 0.01
+s <- 0.1
+## For these parameters, the expected eco-evolutionary equilibrium is
+## N = 1/(4*s*(bn+dn)) = 125
+## b = 1/(2*s) = 5
+out_s <- logistic_GEM_summarized(dt=dt, tmax=tmax, Ni=Ni, Ng=Ng, trait=trait, Vg=Vg, h2=h2, m=m, Vm=Vm, bn=bn, dn=dn, s=s, seed=88082)
+out_fi <- logistic_GEM_full_information(tmax=tmax, Ni=Ni, Ng=Ng, trait=trait, Vg=Vg, h2=h2, m=m, Vm=Vm, bn=bn, dn=dn, s=s, seed=88082)
+saveRDS(out_s, file="sample_logistic_GEM_summarized.RDS")
+saveRDS(out_fi, file="sample_logistic_GEM_full_information.RDS")
+```
+
+We can compare some basic features of the output of the two different functions.
+The obvious difference is in the size of the output, of course:
+```{r, echo=FALSE}
+out_s <- readRDS("sample_logistic_GEM_summarized.RDS")
+out_fi <- readRDS("sample_logistic_GEM_full_information.RDS")
+```
+```{r}
+nrow(out_s)
+nrow(out_fi)
+```
+The full-information version of the function recorded the life histories of every individual that was ever born during the simulation.
+The total number of births and deaths is the total number of events that occurred during the simulations.
+```{r}
+sum(out_fi$noff) + sum(!is.na(out_fi$dtime))
+```
+At any point in time, we can get the full distribution of phenotypes in the population from the full-information run and compare that against the information in the summary.
+For example, at time $t=10$, we can confirm that the two simulations agree by computing the summary statistics from the full-information results:
+```{r}
+out_s[11,]
+c(N=subset(out_fi, btime < 10 & dtime > 10) %>% nrow,
+  mean.etrait=subset(out_fi, btime < 10 & dtime > 10)$etrait %>% mean,
+  var.etrait=subset(out_fi, btime < 10 & dtime > 10)$etrait %>% var,
+  mean.itrait=subset(out_fi, btime < 10 & dtime > 10)$itrait %>% mean,
+  var.itrait=subset(out_fi, btime < 10 & dtime > 10)$itrait %>% var)
+
+```
+That establishes that the two methods return identical outputs. 
+We can explore the actual simulation runs in more detail to understand what's happening during a run.
+In particular, one thing to notice is that genetic diversity is very quickly depleted to zero, such that there is only a single genotype present in the population (Fig. \@ref(fig:genetic-var)).
+This genetic diversity only increases when new genotypes are added, but these too are quickly lost.
+In other words, selection very rapidly depletes genetic diversity.
+
+```{r genetic-var, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Genetic diversity (measured as additive genetic variance $V_g$) is lost rapidly, and only periodically replenished through (black line), although there is always phenotypic diversity due to $V_e$ (red line)."}
+with(out_s, plot(time, var.itrait, type='l', ylim=c(0,max(var.itrait)), col=2, lwd=2.5, xlab="Time", ylab="Phenotypic variance"))
+with(out_s, lines(time, var.etrait, lwd=2.5))
+legend(x='topright', c("Vg", "Vg+Ve"), fill=c(1,2))
+
+```
+
+```{r eco-evo, fig.height=7, fig.width=5, units='in', res=300, fig.cap="(A) The ecological dynamics. (B) The evolutionary dynamics."}
+par(mfrow=c(2,1), mar=c(1.5,3,0.5,0.5), oma=c(2,0.5,0.5,0.5))
+with(out_s, lines(time, N))
+mtext(side=2, line=2, "Population size")
+
+with(out_s, lines(time, mean.etrait))
+mtext(side=2, line=2, "Mean trait")
+
+
+```
+
+
+```{r}
+
+
+
+## an almost equivalent formulation to 
+out2 <- logistic_GEM_summarized(dt=dt, tmax=tmax, Ni=25, Ng=25, trait=2, Vg=0.1, h2=0.75, m=1, Vm=0.05, bn=bn, dn=dn, s=s, seed=88082)
+
+par(mfrow=c(2,1), mar=c(1.5,3,0.5,0.5), oma=c(2,0.5,0.5,0.5))
+with(out2, plot(time, N, type='l', col=2, xlab='', ylab=''))
+with(out, lines(time, N))
+mtext(side=2, line=2, "Population size")
+
+with(out2, plot(time, mean.etrait, type='l', col=2, xlab='', ylab=''))
+with(out, lines(time, mean.etrait))
+mtext(side=2, line=2, "Mean trait")
+
+mtext(side=1, outer=TRUE, line=1, "Time")
+
+output <- vector(mode='list')
+for (i in 1:10001) {
+  mutate(pick_individuals(trait, Ni, Ve, Ng, Vg), 
+         ID=1:Ni,
+         btime=0,
+         dtime=NA,
+         noff=0)
+  
+}
+ -> output
+
+```
+
+
+
+
+```{r, echo=FALSE}
 
 pick_individuals_norm <- function(expected.trait, Ni, Ve, Ng=NULL, Vg=NULL, m=NULL, Vm=NULL) {
   if (is.null(Vg) & is.null(Ve)) stop("You must specify either Vg or Ve")
