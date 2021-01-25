@@ -147,8 +147,8 @@ plot(gen1$etrait, gen1$itrait, xlab="Expected phenotype", ylab="Actual phenotype
 
 To verify that the heritability is functioning as expected, I will compute the heritability in a slightly different way: as the slope of a parent-offspring regression.
 Since heritability is less than 1, individuals will be born with phenotypes that are larger or smaller than expected.
-However, across generations, individuals with larger-than-expected phenotypes will give birth to offspring with traits a bit closer to the expectation, as will individuals with smaller-than-expected phenotypes.
-This 'regression to the mean' will produce a parent-offspring regression with a slope less than one: in particular, this slope is another way to measure heritability, and so it should be close to 0.75 (in this case).
+However, across generations, individuals with larger-than-expected phenotypes will tend to give birth to offspring with traits a bit closer to the expectation, as will individuals with smaller-than-expected phenotypes.
+This 'regression to the mean' will produce a parent-offspring regression with a slope less than one: in particular, since this slope is another way to measure heritability, and so it should be close to 0.75 (in this case).
 To test this, I will use the individuals generated above as the parents of a new generation of offspring, and I will regress the actual (not expected) phenotypes of the parents against the actual phenotypes of the offspring.
 Fig. \@ref(fig:parent-offspring) shows the results, confirming that the regression slope is similar to the heritability (any discrepancy is just due to noise - for example, if you increase to 100,000 individuals across 1,000 genotypes, the slope of the regression is *exactly* 0.75, as expected).
 ```{r parent-offspring, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Parent-offspring regression when heritability is 0.75. The solid blue line gives the one-to-one line, and the dashed orange line gives the results of a regression of the parental phenotype on the offspring phenotype; the legend gives the slope of this regression line."}
@@ -223,10 +223,10 @@ b - d(b) &= (b_n + d_n) N, \\
 N &= \frac{b - d(b)}{b_n + d_n}.
 \end{align*}
 At the ES $\hat{b} = 1/2s$, the ecological equilibrium is 
-\begin{equation*}
+\begin{align*}
 \hat{N} &= \frac{\frac{1}{2s} - \frac{1}{4s}}{b_n + d_n}, \\
 \hat{N} &= \frac{1}{4s(b_n+d_n)}.
-\end{equation*}
+\end{align*}
 
 I have written two versions of the GEM algorithm.
 The first version returns only summary statistics and is relatively fast-running.
@@ -416,19 +416,14 @@ saveRDS(out_fi, file="sample_logistic_GEM_full_information.RDS")
 
 We can compare some basic features of the output of the two different functions.
 The obvious difference is in the size of the output, of course:
-```{r, echo=FALSE}
+```{r}
 out_s <- readRDS("sample_logistic_GEM_summarized.RDS")
 out_fi <- readRDS("sample_logistic_GEM_full_information.RDS")
-```
-```{r}
 nrow(out_s)
 nrow(out_fi)
 ```
 The full-information version of the function recorded the life histories of every individual that was ever born during the simulation.
 The total number of births and deaths is the total number of events that occurred during the simulations.
-```{r}
-sum(out_fi$noff) + sum(!is.na(out_fi$dtime))
-```
 At any point in time, we can get the full distribution of phenotypes in the population from the full-information run and compare that against the information in the summary.
 For example, at time $t=10$, we can confirm that the two simulations agree by computing the summary statistics from the full-information results:
 ```{r}
@@ -441,58 +436,73 @@ c(N=subset(out_fi, btime < 10 & dtime > 10) %>% nrow,
 
 ```
 That establishes that the two methods return identical outputs. 
+
 We can explore the actual simulation runs in more detail to understand what's happening during a run.
 In particular, one thing to notice is that genetic diversity is very quickly depleted to zero, such that there is only a single genotype present in the population (Fig. \@ref(fig:genetic-var)).
-This genetic diversity only increases when new genotypes are added, but these too are quickly lost.
+This genetic diversity only increases when new genotypes are added, but this is only short-lived, as the new genotypes typically quickly disappear through either selection or drift.
 In other words, selection very rapidly depletes genetic diversity.
+The practical upshot of this is that simulations would have to run for a very long time in order to reach the expected eco-evolutionary equilibrium (Fig. \@ref(fig:eco-evo)), since it would take rare beneficial mutations persisting long enough to become fixed by selection, which does not occur in this simulation run. 
 
-```{r genetic-var, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Genetic diversity (measured as additive genetic variance $V_g$) is lost rapidly, and only periodically replenished through (black line), although there is always phenotypic diversity due to $V_e$ (red line)."}
+```{r genetic-var, echo=FALSE, fig.height=4, fig.width=4, units='in', res=300, fig.cap="Genetic diversity (measured as additive genetic variance $V_g$) is lost rapidly, and only periodically replenished through (black line), although there is always phenotypic diversity due to $V_e$ (red line)."}
 with(out_s, plot(time, var.itrait, type='l', ylim=c(0,max(var.itrait)), col=2, lwd=2.5, xlab="Time", ylab="Phenotypic variance"))
 with(out_s, lines(time, var.etrait, lwd=2.5))
 legend(x='topright', c("Vg", "Vg+Ve"), fill=c(1,2))
 
 ```
 
-```{r eco-evo, fig.height=7, fig.width=5, units='in', res=300, fig.cap="(A) The ecological dynamics. (B) The evolutionary dynamics."}
-par(mfrow=c(2,1), mar=c(1.5,3,0.5,0.5), oma=c(2,0.5,0.5,0.5))
-with(out_s, lines(time, N))
+```{r eco-evo, echo=FALSE, fig.height=7, fig.width=4, units='in', res=300, fig.cap="(A) The ecological dynamics. (B) The evolutionary dynamics. The expected eco-evolutionary equilibrium is N=125, b=5."}
+par(mfrow=c(3,1), mar=c(1.5,3,0.5,0.5), oma=c(2,0.5,0.5,0.5))
+with(out_s, plot(time, N, type='l', lwd=2.5, ylab="", xlab=""))
 mtext(side=2, line=2, "Population size")
 
-with(out_s, lines(time, mean.etrait))
+with(out_s, plot(time, mean.etrait, type='l', lwd=2.5, ylab="", xlab=""))
 mtext(side=2, line=2, "Mean trait")
 
-
+with(out_s, plot(time, var.etrait, type='l', lwd=2.5, ylab="", xlab=""))
+mtext(side=2, line=2, "Vg")
 ```
 
 
-```{r}
+In real populations, of course, this incredibly slow approach to an eco-evolutionary equilibrium would be tempered by different forces.
+For example, in an asexual population, the population sizes are enormous (which would be a problem for a Gillespie algorithm, as it would drastically slow down the simulation), so even though the probability of mutation in any reproductive event is low, the probability of a mutation during a generation is very high.
+In a sexual population, novel genetic mutation is produced via sex, and not just mutation.
+You can approximate this latter effect by increasing the mutation rate, but keeping the mutational variance small.
+This causes the simulation to reach the expected eco-evolutionary equilibrium.
 
+```{r eco-evo2, fig.height=7, fig.width=4, units='in', res=300, fig.cap="(A) The ecological dynamics. (B) The evolutionary dynamics when mutation occurs every reproductive event, but the mutational variance is small. The expected eco-evolutionary equilibrium is N=125, b=5."}
+## Specify heritability and additive genetic variance
+h2 = 0.75
+Vg = 0.1
+## specify an initial population-level trait mean
+trait <- 2
+## specify an initial number of genotypes and individuals
+Ng <- 25
+Ni <- 25
+## length of time to run
+tmax <- 200
+dt <- 1
+## key eco-evolutionary parameters
+bn <- 0.01
+dn <- 0.01
+s <- 0.1
+## mutation
+m <- 1 ## mutation every reproductive event
+Vm <- 0.01 ## but with a small effect
 
+## For these parameters, the expected eco-evolutionary equilibrium is
+## N = 1/(4*s*(bn+dn)) = 125
+## b = 1/(2*s) = 5
+out_s <- logistic_GEM_summarized(dt=dt, tmax=tmax, Ni=Ni, Ng=Ng, trait=trait, Vg=Vg, h2=h2, m=m, Vm=Vm, bn=bn, dn=dn, s=s, seed=88082)
 
-## an almost equivalent formulation to 
-out2 <- logistic_GEM_summarized(dt=dt, tmax=tmax, Ni=25, Ng=25, trait=2, Vg=0.1, h2=0.75, m=1, Vm=0.05, bn=bn, dn=dn, s=s, seed=88082)
-
-par(mfrow=c(2,1), mar=c(1.5,3,0.5,0.5), oma=c(2,0.5,0.5,0.5))
-with(out2, plot(time, N, type='l', col=2, xlab='', ylab=''))
-with(out, lines(time, N))
+par(mfrow=c(3,1), mar=c(1.5,3,0.5,0.5), oma=c(2,0.5,0.5,0.5))
+with(out_s, plot(time, N, type='l', lwd=2.5, ylab="", xlab=""))
 mtext(side=2, line=2, "Population size")
 
-with(out2, plot(time, mean.etrait, type='l', col=2, xlab='', ylab=''))
-with(out, lines(time, mean.etrait))
+with(out_s, plot(time, mean.etrait, type='l', lwd=2.5, ylab="", xlab=""))
 mtext(side=2, line=2, "Mean trait")
 
-mtext(side=1, outer=TRUE, line=1, "Time")
-
-output <- vector(mode='list')
-for (i in 1:10001) {
-  mutate(pick_individuals(trait, Ni, Ve, Ng, Vg), 
-         ID=1:Ni,
-         btime=0,
-         dtime=NA,
-         noff=0)
-  
-}
- -> output
+with(out_s, plot(time, var.etrait, type='l', lwd=2.5, ylab="", xlab=""))
+mtext(side=2, line=2, "Vg")
 
 ```
 
