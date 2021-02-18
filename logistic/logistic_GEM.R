@@ -86,8 +86,7 @@ logistic_GEM <- function(seed, dt, tmax, N0, traitmean, traitcv, h2, bs, ds, slo
 
     }
     ## trim down to only what you need
-    output <- output[1:i]
-    time <- time[1:i]
+    
 
     return(list(time=time,traits=output))
 }
