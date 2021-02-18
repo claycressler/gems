@@ -342,3 +342,58 @@ lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/(sum(sort(b)-bs
 
 When the mean trait is above the ESS, we see that, in the original formulation of the GEM, individuals with traits below the mean are more likely to give birth and die than in the many-slice GEM; conversely, in the many-slice GEM, individuals with traits above the mean are more likely to give birth and die.
 The original GEM formulation predicts a slightly higher fitness across all trait values than in the many-slice GEM, but the difference is largest at higher trait values.
+
+
+```{r, echo=FALSE}
+
+pick_individuals <- function(N0, traitmean, traitsd) {
+  mu <- log(traitmean^2 / sqrt(traitsd^2+traitmean^2))
+  sigma <- sqrt(log(traitsd^2/traitmean^2 + 1))
+  ## record this initial distribution in the output
+  return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+## generate many different individuals
+set.seed(10010)
+b <- pick_individuals(100, 0.25, 0.05)
+
+## simulate the choosing of individuals and events under both GEM formulations many, many times and confirm that the probabilities of any individual being chosen match the expectation derived above
+s <- 2
+bs <- ds <- 5e-4
+data.frame(ind=sample(1:length(b), 1e5, replace=TRUE), ## pick individuals at random
+           rand=runif(1e5), ## draw a random number
+           birth=rep(0,1e5),
+           death=rep(0,1e5)) %>% 
+  mutate(birth=ifelse(rand > (b[ind]-bs*length(b))/(b[ind]-bs*length(b)+s*b[ind]^2+ds*length(b)), 0, 1), ## compare the random number to the relative rate of birth
+         death=ifelse(birth==0,1,0)) -> events
+  
+## Alternative GEM
+events2 <- array(NA, dim=c(1e5,3))
+## create the "wheel" of fortune cumsum'ing all of the individual per-capita rates
+brates <- b-bs*length(b)
+drates <- s*b^2+ds*length(b)
+rates <- c(brates, drates)
+wheel <- cumsum(rates)/sum(rates)
+for (i in 1:1e5) {
+  ## choose an individual and event at random
+  rand <- runif(1)
+  ## who does the event happen to?
+  ind <- ifelse(min(which(rand < wheel)) <= length(b),
+                min(which(rand < wheel)),
+                min(which(rand < wheel))-length(b))
+  ## which event happens?
+  birth <- death <- 0
+  if (rand <= sum(brates)/sum(rates))
+    birth <- 1
+  else death <- 1
+  events2[i,] <- c(ind,birth,death)
+}
+events2 <- as.data.frame(events2)
+colnames(events2) <- c("ind","birth","death")
+
+## what is the average birth rate under the two simulations?
+nbirths_orig <- sum(events$birth)
+
+
+
+```
