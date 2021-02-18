@@ -1,7 +1,6 @@
-library(magrittr)
+library(tidyverse)
 library(deSolve)
 library(parallel)
-library(pryr)
 
 source("logistic_GEM.R")
 

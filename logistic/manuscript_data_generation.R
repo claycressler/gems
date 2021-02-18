@@ -1,5 +1,5 @@
 ## This code produces versions of the figures used in the "transient evolutionary attractor" manuscript. Basically, it uses the logistic_GEM to simulate ecological and evolutionary dynamics, varying the strength of density-dependence (and thus the population size). This allows us to see how stochasticity (e.g., drift) can play an important role in both the evolutionary dynamics and the ecological dynamics.
-library(magrittr)
+library(tidyverse)
 library(parallel)
 
 ## the function for simulating the GEM with storage
@@ -274,3 +274,86 @@ mtext(side=1, 'Time', line=3)
 dev.off()
 
     
+
+
+library(tidyverse)
+library(parallel)
+
+## the function for simulating the GEM with storage
+source("logistic_GEM_with_storage.R")
+
+## Here is the set of GEM parameters that will remain constant across the different simulations
+traitmean <- 1.8
+traitcv <- 0.3
+h2 <- 0.75
+slope <- 0.3/1.8^2 ## from dmin = slope*bmax^2 => 0.3 = slope*1.8^2
+tmax <- 400
+N0 <- 5
+
+## RNG seeds
+set.seed(101)
+seeds <- floor(runif(500, 1, 1e7))
+
+
+
+
+
+
+## Start simulations with a range of initial population sizes and trait values, but always with the initial population size at the 
+## ecological equilibrium given the trait value. 
+## ESS is bmax* = 1/(2*slope) = 3
+## Ecological equilibrium N* = (bmax-s*bmax^2)/(bs+ds)
+
+
+source("logistic_GEM.R")
+
+## Start at the ecological equilibrium given the trait value
+bmax_seq <- seq(0.5,5,0.25)
+s <- 1/6
+bs <- ds <- 0.025
+N0_seq <- sapply(bmax_seq, function(b) (b-s*b^2)/(bs+ds))
+output1 <- vector(mode='list', length=length(bmax_seq))
+for (i in 1:length(bmax_seq)) {
+    seeds <- floor(runif(50, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=1, tmax=400, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=4
+    ) -> out 
+    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+    data.frame(time=0:400,
+               N=lapply(out, function(l) lapply(l$traits, length) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               set=i) -> output1[[i]]
+}
+
+
+## Start at the same population size, regardless of the initial trait, and one that is well below the expected eco-evolutionary ecological equilibrium of 30
+output2 <- vector(mode='list', length=length(bmax_seq))
+for (i in 1:length(bmax_seq)) {
+    seeds <- floor(runif(50, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=1, tmax=400, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=4
+    ) -> out 
+    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+    data.frame(time=0:400,
+               N=lapply(out, function(l) lapply(l$traits, length) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               set=i) -> output2[[i]]
+}
+
+## Start at the same population size, regardless of the initial trait, and one that is well above the expected eco-evolutionary ecological equilibrium of 30
+output3 <- vector(mode='list', length=length(bmax_seq))
+for (i in 1:length(bmax_seq)) {
+    seeds <- floor(runif(50, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=1, tmax=400, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=4
+    ) -> out 
+    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+    data.frame(time=0:400,
+               N=lapply(out, function(l) lapply(l$traits, length) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               set=i) -> output3[[i]]
+}
+
