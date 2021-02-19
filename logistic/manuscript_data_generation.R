@@ -408,7 +408,7 @@ for (i in 1:length(bmax_seq)) {
     set.seed(1343421)
     seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             function(s) logistic_GEM(seed=s, dt=1, tmax=100, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
              mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
@@ -429,7 +429,7 @@ output2 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
     seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
              mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
@@ -443,6 +443,10 @@ for (i in 1:length(bmax_seq)) {
 tout = Sys.time()
 tout-tin
 
+out <- vector(mode='list', length=100)
+for (j in 1:100)
+    out[[j]] <- logistic_GEM(seed=seeds[j], dt=1, tmax=100, N0=22, traitmean=1.5, traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s)
+
 
 
 ## Start at the same population size, regardless of the initial trait, and one that is well above the expected eco-evolutionary ecological equilibrium of 30
@@ -451,7 +455,7 @@ output3 <- vector(mode='list', length=length(bmax_seq))
 for (i in 2:length(bmax_seq)) {
     seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
              mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
