@@ -276,36 +276,14 @@ dev.off()
     
 
 
-library(tidyverse)
-library(parallel)
-
-## the function for simulating the GEM with storage
-source("logistic_GEM_with_storage.R")
-
-## Here is the set of GEM parameters that will remain constant across the different simulations
-traitmean <- 1.8
-traitcv <- 0.3
-h2 <- 0.75
-slope <- 0.3/1.8^2 ## from dmin = slope*bmax^2 => 0.3 = slope*1.8^2
-tmax <- 400
-N0 <- 5
-
-## RNG seeds
-set.seed(101)
-seeds <- floor(runif(500, 1, 1e7))
-
-
-
-
 
 
 ## Start simulations with a range of initial population sizes and trait values
-
 ## ESS is bmax* = 1/(2*slope) = 3
 ## Ecological equilibrium N* = (bmax-s*bmax^2)/(bs+ds)
-
-
 source("logistic_GEM.R")
+library(tidyverse)
+library(parallel)
 
 ## Start at the ecological equilibrium given the trait value
 bmax_seq <- seq(0.5,5.5,0.5)
