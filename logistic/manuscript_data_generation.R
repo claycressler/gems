@@ -299,8 +299,8 @@ seeds <- floor(runif(500, 1, 1e7))
 
 
 
-## Start simulations with a range of initial population sizes and trait values, but always with the initial population size at the 
-## ecological equilibrium given the trait value. 
+## Start simulations with a range of initial population sizes and trait values
+
 ## ESS is bmax* = 1/(2*slope) = 3
 ## Ecological equilibrium N* = (bmax-s*bmax^2)/(bs+ds)
 
@@ -308,52 +308,184 @@ seeds <- floor(runif(500, 1, 1e7))
 source("logistic_GEM.R")
 
 ## Start at the ecological equilibrium given the trait value
-bmax_seq <- seq(0.5,5,0.25)
+bmax_seq <- seq(0.5,5.5,0.5)
 s <- 1/6
 bs <- ds <- 0.025
 N0_seq <- sapply(bmax_seq, function(b) (b-s*b^2)/(bs+ds))
 output1 <- vector(mode='list', length=length(bmax_seq))
+tin = Sys.time()
 for (i in 1:length(bmax_seq)) {
-    seeds <- floor(runif(50, 1, 1e5))
+    set.seed(1343421)
+    seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=400, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
-             mc.cores=4
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    data.frame(time=0:400,
-               N=lapply(out, function(l) lapply(l$traits, length) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+    data.frame(time=0:1000,
+               N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i) -> output1[[i]]
 }
+tout = Sys.time()
+tout-tin
 
 
 ## Start at the same population size, regardless of the initial trait, and one that is well below the expected eco-evolutionary ecological equilibrium of 30
+tin = Sys.time()
 output2 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
-    seeds <- floor(runif(50, 1, 1e5))
+    seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=400, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
-             mc.cores=4
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    data.frame(time=0:400,
-               N=lapply(out, function(l) lapply(l$traits, length) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+    data.frame(time=0:1000,
+               N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
-               set=i) -> output2[[i]]
+               cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
+               set=i)  -> output2[[i]]
 }
+tout = Sys.time()
+tout-tin
+
+
 
 ## Start at the same population size, regardless of the initial trait, and one that is well above the expected eco-evolutionary ecological equilibrium of 30
+tin = Sys.time()
 output3 <- vector(mode='list', length=length(bmax_seq))
-for (i in 1:length(bmax_seq)) {
-    seeds <- floor(runif(50, 1, 1e5))
+for (i in 2:length(bmax_seq)) {
+    seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=400, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
-             mc.cores=4
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    data.frame(time=0:400,
-               N=lapply(out, function(l) lapply(l$traits, length) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+    data.frame(time=0:1000,
+               N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
-               set=i) -> output3[[i]]
+               cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
+               set=i)  -> output3[[i]]
 }
+tout = Sys.time()
+tout-tin
+
+output1 %>% 
+    do.call("rbind.data.frame",.) %>% 
+    mutate(., init=paste("b0=",signif(bmax_seq[set],3),"\n","N0=",signif(N0_seq[set],3),sep="")) -> out1
+
+output2 %>% 
+    do.call("rbind.data.frame",.) %>% 
+    mutate(., init=paste("b0=",signif(bmax_seq[set],3),"\n","N0=",10,sep="")) -> out2
+
+output3 %>% 
+    do.call("rbind.data.frame",.) %>% 
+    mutate(., init=paste("b0=",signif(bmax_seq[set],3),"\n","N0=",50,sep=""))  -> out3
+
+saveRDS(out1, file="Logistic_GEM_bs=ds=025_varying_b0_and_N0.RDS")
+saveRDS(out2, file="Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
+saveRDS(out3, file="Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
+
+ggplot(out1, aes(x=time, y=N)) + facet_wrap(~init) + geom_line() + theme_bw()
+
+ggplot(out1, aes(x=time, y=b)) + facet_wrap(~init) + geom_line() + theme_bw()
+
+
+ggplot(out2, aes(x=time, y=N)) + facet_wrap(~init) + geom_line() + theme_bw()
+
+ggplot(out2, aes(x=time, y=b)) + facet_wrap(~init) + geom_line() + theme_bw()
+
+
+ggplot(out3, aes(x=time, y=N)) + facet_wrap(~init) + geom_line() + theme_bw()
+
+ggplot(out3, aes(x=time, y=b)) + facet_wrap(~init) + geom_line() + theme_bw()
+
+
+
+## Start at the ecological equilibrium given the trait value
+bmax_seq <- seq(0.5,5.5,0.5)
+s <- 1/6
+bs <- ds <- 0.0375
+N0_seq <- sapply(bmax_seq, function(b) (b-s*b^2)/(bs+ds))
+output1 <- vector(mode='list', length=length(bmax_seq))
+tin = Sys.time()
+for (i in 1:length(bmax_seq)) {
+    set.seed(1343421)
+    seeds <- floor(runif(100, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=8
+    ) -> out 
+    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+    data.frame(time=0:1000,
+               N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
+               set=i) -> output1[[i]]
+}
+tout = Sys.time()
+tout-tin
+
+
+## Start at the same population size, regardless of the initial trait, and one that is well below the expected eco-evolutionary ecological equilibrium of 30
+tin = Sys.time()
+output2 <- vector(mode='list', length=length(bmax_seq))
+for (i in 1:length(bmax_seq)) {
+    seeds <- floor(runif(100, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=8
+    ) -> out 
+    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+    data.frame(time=0:1000,
+               N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
+               set=i)  -> output2[[i]]
+}
+tout = Sys.time()
+tout-tin
+
+
+
+## Start at the same population size, regardless of the initial trait, and one that is well above the expected eco-evolutionary ecological equilibrium of 30
+tin = Sys.time()
+output3 <- vector(mode='list', length=length(bmax_seq))
+for (i in 2:length(bmax_seq)) {
+    seeds <- floor(runif(100, 1, 1e5))
+    mclapply(seeds,
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             mc.cores=8
+    ) -> out 
+    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+    data.frame(time=0:1000,
+               N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
+               set=i)  -> output3[[i]]
+}
+tout = Sys.time()
+tout-tin
+
+output1 %>% 
+    do.call("rbind.data.frame",.) %>% 
+    mutate(., init=paste("b0=",signif(bmax_seq[set],3),"\n","N0=",signif(N0_seq[set],3),sep="")) -> out1
+
+output2 %>% 
+    do.call("rbind.data.frame",.) %>% 
+    mutate(., init=paste("b0=",signif(bmax_seq[set],3),"\n","N0=",10,sep="")) -> out2
+
+output3 %>% 
+    do.call("rbind.data.frame",.) %>% 
+    mutate(., init=paste("b0=",signif(bmax_seq[set],3),"\n","N0=",50,sep=""))  -> out3
+
+saveRDS(out1, file="Logistic_GEM_bs=ds=0375_varying_b0_and_N0.RDS")
+saveRDS(out2, file="Logistic_GEM_bs=ds=0375_varying_b0_N0=10.RDS")
+saveRDS(out3, file="Logistic_GEM_bs=ds=0375_varying_b0_N0=50.RDS")
+
+system("git add .")
+system("git commit -m 'results varying b0 and n0, bs=ds=0.0375")
+system("git push")
 
