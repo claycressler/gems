@@ -1,0 +1,399 @@
+---
+title: "Comparing GEM formulations"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+How do different ways of drawing individuals in a GEM influence trait evolution?
+To determine this, let's generate a bunch of individuals with lognormally distributed traits, and then calculate the probability of killing an individual with a particular phenotype under the two GEM formulations.
+In the original GEM formulation, you choose an individual at random to "play" (so the probability of choosing any particular individual is $1/N$).
+The fate of that individual depends on its traits.
+For simplicity, let's use the simplest one-species logistic model, so the only things that can happen to a chosen individual will be that it will give birth, or it will die.
+The probability that it will give birth or die depends on its traits and the total population size.
+That is, the original GEM formulation computes the total population-level birth and death rates, using the traits of the individual.
+So, if the chosen individual has birth rate, $b_i$ and death rate $d_i$, the probability of giving birth will be proportional to $(b_i-b_s N)N$ and the probability of dying will be proportional to $(d_i+d_s N)N$.
+Specifically, since determining which event happens depends on the relative rates of the two events, the probability of birth is 
+\begin{equation}
+\frac{b_i-b_s N}{b_i-b_s N + d_i+d_s N}
+\end{equation}
+and the probability of death is 
+\begin{equation}
+\frac{d_i+d_s N}{b_i-b_s N + d_i+d_s N}
+\end{equation}
+Since the two steps of the original GEM are independent, the total probability that an individual will die (for example), is
+\begin{equation}
+\frac{d_i+d_s N}{(b_i-b_s N + d_i+d_s N)N}
+\end{equation}
+*(Not sure if this is reasonable or not.)* 
+You could also compute an approximate fitness of an individual as the difference between its probability of giving birth and dying as
+\begin{equation}
+\frac{b_i-b_s N - (d_i+d_s N)}{(b_i+d_i)N + (d_s-b_s) N^2}
+\end{equation}
+
+In contrast, the alternative formulation of a GEM choose both an individual and its fate based on its traits. 
+That is, all of the per-capita birth and death rates are ordered into a wheel and divided by the total of all of these rates.
+The probability that any individual event will be chosen will be equal to the width of its "slice" on the wheel.
+Across all individuals in the population, the sum of the birth and death rates is equal to
+\begin{equation}
+\sum_{j=1}^N (b_j - b_s N) + \sum_{j=1}^N (d_j + d_s N) = (d_s-b_s)N^2 + \sum_{j=1}^N (b_j+d_j)
+\end{equation}
+Thus, the probability of any particular individual dying is 
+\begin{equation}
+\frac{d_i+d_s N}{(d_s-b_s)N^2 + \sum_{j=1}^N (b_j+d_j)}
+\end{equation}
+The approximate fitness, as above, is
+\begin{equation}
+\frac{b_i-b_s N - (d_i+d_s N)}{(d_s-b_s)N^2 + \sum_{j=1}^N (b_j+d_j)}
+\end{equation}
+
+Thus, if we compare the fitness of an individual under either formulation, we have that the fitness of an individual will be higher in the original GEM than in the many-slice GEM if:
+\begin{align}
+\frac{b_i - b_s N - (d_i+d_s N)}{(b_i+d_i)N + (d_s-b_s) N^2} &> \frac{b_i - b_s N - (d_i+d_s N)}{(d_s-b_s)N^2 + \sum_{j=1}^N (b_j+d_j)} \\
+(d_s-b_s)N^2 + \sum_{j=1}^N (b_j+d_j) &> (d_s-b_s) N^2 + (b_i+d_i)N \\
+\sum_{j=1}^N (b_j+d_j) &> (b_i+d_i)N \\
+\frac{1}{N} \sum_{j=1}^N (b_j+d_j) &> b_i + d_i \\
+\bar{b}+\bar{d} &> b_i+d_i 
+\end{align}
+noting that $\bar{b}=\sum_{j=1}^N b_j/N$ and $\bar{d} = \sum_{j=1}^N d_j/N$ are the population average birth and death rates, respectively.
+You would end with the exact same expression if you computed the probability of any particular individual giving birth or dying.
+
+**This suggests that the two GEM formulations are not equivalent.**
+In particular, individuals with traits below the population mean will have higher fitness in the original GEM formulation than in the many-slice GEM. 
+Of course, it's not clear to me which way of formulating a GEM is "correct" - they will predict identical dynamics if everyone has the same trait, so the comparison with a deterministic simulation will be identical under both formulations.
+Maybe there is a more creative way to compare the two... I'll have to think on it more.
+Regardless, the takeaway here is that it is possible that the current GEM formulation is biased towards individuals with smaller than average traits, which could explain why the trait mean always wanders below the ESS.
+
+```{r, echo=FALSE}
+
+pick_individuals <- function(N0, traitmean, traitsd) {
+  mu <- log(traitmean^2 / sqrt(traitsd^2+traitmean^2))
+  sigma <- sqrt(log(traitsd^2/traitmean^2 + 1))
+  ## record this initial distribution in the output
+  return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+## generate many different individuals
+set.seed(10010)
+b <- pick_individuals(100, 0.25, 0.05)
+
+## simulate the choosing of individuals and events under both GEM formulations many, many times and confirm that the probabilities of any individual being chosen match the expectation derived above
+s <- 2
+bs <- ds <- 5e-4
+data.frame(ind=sample(1:length(b), 1e5, replace=TRUE), ## pick individuals at random
+           rand=runif(1e5), ## draw a random number
+           birth=rep(0,1e5),
+           death=rep(0,1e5)) %>% 
+  mutate(birth=ifelse(rand > (b[ind]-bs*length(b))/(b[ind]-bs*length(b)+s*b[ind]^2+ds*length(b)), 0, 1), ## compare the random number to the relative rate of birth
+         death=ifelse(birth==0,1,0)) -> events
+  
+## Alternative GEM
+events2 <- array(NA, dim=c(1e5,3))
+## create the "wheel" of fortune cumsum'ing all of the individual per-capita rates
+brates <- b-bs*length(b)
+drates <- s*b^2+ds*length(b)
+rates <- c(brates, drates)
+wheel <- cumsum(rates)/sum(rates)
+for (i in 1:1e5) {
+  ## choose an individual and event at random
+  rand <- runif(1)
+  ## who does the event happen to?
+  ind <- ifelse(min(which(rand < wheel)) <= length(b),
+                min(which(rand < wheel)),
+                min(which(rand < wheel))-length(b))
+  ## which event happens?
+  birth <- death <- 0
+  if (rand <= sum(brates)/sum(rates))
+    birth <- 1
+  else death <- 1
+  events2[i,] <- c(ind,birth,death)
+}
+events2 <- as.data.frame(events2)
+colnames(events2) <- c("ind","birth","death")
+
+```
+
+We can explore this more using a simulation study by randomly generating individuals in a population, and then simulating many random fates for those individuals, as prescribed by either the original GEM or the many-slice GEM.
+In this case, we will draw 100 individuals with mean birth rate of 0.25 (which happens to be the ESS for these parameter values), and then we will simulate 100,000 fates for those individuals.
+
+```{r, echo=FALSE}  
+## what is the probability of being chosen to play, given the individual's trait, for each GEM formulation?
+s <- 2
+bs <- ds <- 5e-4
+plot(sort(b), as.numeric(table(events[,1])[order(b)])/1e5, ylim=range(table(events2[,1]))/1e5, lwd=2, xlab="Trait value", ylab="Prob of being chosen")
+points(sort(b), as.numeric(table(events2[,1])[order(b)])/1e5, col=2)
+## what is the expectation, based on the calculations above?
+abline(h=1/100, lty=2, lwd=2)
+lines(sort(b), (sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))/sum((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lty=2, col=2, lwd=2)
+legend(x='topleft',legend=c("Original","Many-slice"), fill=c(1,2),bty='n')
+  
+```
+
+As expected, the two formulations are very different in terms of who gets to "play." 
+The original GEM gives an equal chance to everyone, whereas individuals with traits above the mean or below the mean are more likely to get to play in the many-slice GEM.
+What if we look at the fates of those individuals (e.g., probability of giving birth and probability of dying)?
+
+```{r, echo=FALSE}  
+## what is the probability of giving birth or dying, given the individual's trait, for each GEM formulation?
+library(tidyverse)
+events %>% group_by(ind) %>% summarise(pbirth=sum(birth)/1e5, pdeath=sum(death)/1e5) %>% as.data.frame -> event_probs
+events2 %>% group_by(ind) %>% summarise(pbirth=sum(birth)/1e5, pdeath=sum(death)/1e5) %>% as.data.frame -> event_probs2
+
+## observed probabilities of giving birth in the original gem
+plot(sort(b), event_probs[order(b),"pbirth"], ylim=range(event_probs2[order(b),"pbirth"]), xlab="Birth rate", ylab="Probability of giving birth")
+## expected probability of giving birth, based on the above
+lines(sort(b), (sort(b)-bs*length(b))/((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))*length(b)), lwd=2, lty=2)
+## observed probabilities of giving birth in the many-slice gem
+points(sort(b), event_probs2[order(b),"pbirth"], col=2)
+## expected probabilities 
+lines(sort(b), (sort(b)-bs*length(b))/(sum(sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lwd=2, lty=2, col=2)
+
+## observed probabilities of dying in the original gem
+plot(sort(b), event_probs[order(b),"pdeath"], ylim=range(event_probs2[order(b),"pdeath"]), xlab="Birth rate", ylab="Probability of dying")
+## expected probability of giving birth, based on the above
+lines(sort(b), (s*sort(b)^2+ds*length(b))/((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))*length(b)), lwd=2, lty=2)
+## observed probabilities of giving birth in the many-slice gem
+points(sort(b), event_probs2[order(b),"pdeath"], col=2)
+## expected probabilities 
+lines(sort(b), (s*sort(b)^2+ds*length(b))/(sum(sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lwd=2, lty=2, col=2)
+
+```
+
+Here we see that the probability that an individual will give birth or die in the original GEM formulation is essentially independent of the traits (at least at this set of ecological conditions), whereas in the many-slice GEM, individuals with large birth rates have a higher probability of both giving birth and dying. 
+This confirms the results we found from the math above; on the face of it, that seems more intuitive that individuals with higher birth rates should be more likely to give birth or die.
+We can also compute the approximate fitness as the difference between its probability of giving birth and its probability of dying.
+
+```{r, echo=FALSE}
+mutate(event_probs, fitness=pbirth-pdeath) -> event_probs
+mutate(event_probs2, fitness=pbirth-pdeath) -> event_probs2
+## observed "fitness"
+plot(sort(b), event_probs[order(b),"fitness"], ylim=c(-0.001,0.0015), xlab="Birth rate", ylab="P(birth)-P(death)")
+## expected fitness
+lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/((sort(b)-bs*length(b)+(s*sort(b)^2+ds*length(b)))*length(b)), lwd=2, lty=2)
+points(sort(b), event_probs2[order(b),"fitness"], col=2)
+lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/(sum(sort(b)-bs*length(b)+(s*sort(b)^2+ds*length(b)))), lwd=2, lty=2, col=2)
+abline(v=0.25, col=gray(0.35))
+
+
+```
+
+One thing that comes out of this is that the fitness does not peak at the the ESS in the original GEM, but it does in the many-slice GEM.
+Under both algorithms, the numerators of the fitness expression are the same - in particular, they are the per-capita growth rate of the individual given its traits.
+But the denominators differ.
+In particular, in the original GEM, the denominator is different for every individual because the total population-level birth and death rates (the denominator in both algorithms) are calculated by imagining that every individual in the population had the same traits as the focal individual, whereas in the many-slice GEM, the population-wide birth and death rates are calculated by summing all of the individual birth and death rates.
+Additionally, as expected, we see that individuals with traits below the mean have higher fitness in the original GEM, and individuals with traits above the mean have higher fitness in the many-slice GEM.
+These results hint a potential problem with the original formulation of the GEM compared to the many-slice GEM.
+
+However, another point to consider is that, right now, the mean trait is at the expected ESS.
+What if we repeat these analyses, but moving the mean trait well below the ESS (since the ESS is 0.25, let's put the initial trait at 0.1 instead, but with the same starting standard deviation).
+How does that affect the probabilies of giving birth or dying, and the approximate fitness, depending on the trait value?
+
+```{r, echo=FALSE, eval=TRUE}
+## generate many different individuals
+set.seed(10010)
+b <- pick_individuals(100, 0.1, 0.05)
+
+## fast version of generating the original GEM
+data.frame(ind=sample(1:length(b), 1e5, replace=TRUE), ## pick individuals at random
+           rand=runif(1e5), ## draw a random number
+           birth=rep(0,1e5),
+           death=rep(0,1e5)) %>% 
+  mutate(birth=ifelse(rand > (b[ind]-bs*length(b))/(b[ind]-bs*length(b)+s*b[ind]^2+ds*length(b)), 0, 1), ## compare the random number to the relative rate of birth
+         death=ifelse(birth==0,1,0)) -> events3
+
+## Alternative GEM
+events4 <- array(NA, dim=c(1e5,3))
+## create the "wheel" of fortune cumsum'ing all of the individual per-capita rates
+brates <- b-bs*length(b)
+drates <- s*b^2+ds*length(b)
+rates <- c(brates, drates)
+wheel <- cumsum(rates)/sum(rates)
+for (i in 1:1e5) {
+  ## choose an individual and event at random
+  rand <- runif(1)
+  ## who does the event happen to?
+  ind <- ifelse(min(which(rand < wheel)) <= length(b),
+                min(which(rand < wheel)),
+                min(which(rand < wheel))-length(b))
+  ## which event happens?
+  birth <- death <- 0
+  if (rand <= sum(brates)/sum(rates))
+    birth <- 1
+  else death <- 1
+  events4[i,] <- c(ind,birth,death)
+}
+events4 <- as.data.frame(events4)
+colnames(events4) <- c("ind","birth","death")
+
+## what is the probability of giving birth or dying, given the individual's trait, for each GEM formulation?
+events3 %>% group_by(ind) %>% summarise(pbirth=sum(birth)/1e5, pdeath=sum(death)/1e5) %>% as.data.frame -> event_probs
+events4 %>% group_by(ind) %>% summarise(pbirth=sum(birth)/1e5, pdeath=sum(death)/1e5) %>% as.data.frame -> event_probs2
+
+## observed probabilities of giving birth in the original gem
+plot(sort(b), event_probs[order(b),"pbirth"], ylim=range(event_probs2[order(b),"pbirth"]), xlab="Birth rate", ylab="Probability of giving birth")
+## expected probability of giving birth, based on the above
+lines(sort(b), (sort(b)-bs*length(b))/((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))*length(b)), lwd=2, lty=2)
+## observed probabilities of giving birth in the many-slice gem
+points(sort(b), event_probs2[order(b),"pbirth"], col=2)
+## expected probabilities 
+lines(sort(b), (sort(b)-bs*length(b))/(sum(sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lwd=2, lty=2, col=2)
+
+## observed probabilities of dying in the original gem
+plot(sort(b), event_probs[order(b),"pdeath"], ylim=range(event_probs2[order(b),"pdeath"]), xlab="Birth rate", ylab="Probability of dying")
+## expected probability of giving birth, based on the above
+lines(sort(b), (s*sort(b)^2+ds*length(b))/((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))*length(b)), lwd=2, lty=2)
+## observed probabilities of giving birth in the many-slice gem
+points(sort(b), event_probs2[order(b),"pdeath"], col=2)
+## expected probabilities 
+lines(sort(b), (s*sort(b)^2+ds*length(b))/(sum(sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lwd=2, lty=2, col=2)
+
+mutate(event_probs, fitness=pbirth-pdeath) -> event_probs
+mutate(event_probs2, fitness=pbirth-pdeath) -> event_probs2
+## observed "fitness"
+plot(sort(b), event_probs[order(b),"fitness"], xlab="Birth rate", ylab="P(birth)-P(death)", ylim=range(c(event_probs[,"fitness"],event_probs2[,"fitness"])))
+## expected fitness
+lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/((sort(b)-bs*length(b)+(s*sort(b)^2+ds*length(b)))*length(b)), lwd=2, lty=2)
+points(sort(b), event_probs2[order(b),"fitness"], col=2)
+lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/(sum(sort(b)-bs*length(b)+(s*sort(b)^2+ds*length(b)))), lwd=2, lty=2, col=2)
+abline(h=0, col=gray(0.35))
+
+```
+
+We see something different now.
+Now, the original GEM (black) has individuals with birth traits below the mean being slightly more likely to give birth and much more likely to die than in the many-slice GEM; however, the many-slice GEM (red) has individuals with birth raits above the mean being much more likely to give birth and more likely to die than in the original GEM. 
+Looking at the fitnesses, you can see that the original GEM 
+Overall, this means that in the original GEM, individuals with traits above or below the mean have lower fitness than in the many-slice GEM.
+Interestingly, because of the differences in the way the denominator is calculated, individuals with traits closer to the ESS actually don't really have positive fitness in the original GEM formulation, where they do in the many-slice GEM.
+
+What if, conversely, the mean trait is above the ESS? 
+Repeat again, this time assuming that the mean trait is 0.4.
+```{r, echo=FALSE, eval=TRUE}
+## generate many different individuals
+set.seed(10010)
+b <- pick_individuals(100, 0.4, 0.05)
+
+## fast version of generating the original GEM
+data.frame(ind=sample(1:length(b), 1e5, replace=TRUE), ## pick individuals at random
+           rand=runif(1e5), ## draw a random number
+           birth=rep(0,1e5),
+           death=rep(0,1e5)) %>% 
+  mutate(birth=ifelse(rand > (b[ind]-bs*length(b))/(b[ind]-bs*length(b)+s*b[ind]^2+ds*length(b)), 0, 1), ## compare the random number to the relative rate of birth
+         death=ifelse(birth==0,1,0)) -> events3
+
+## Alternative GEM
+events4 <- array(NA, dim=c(1e5,3))
+## create the "wheel" of fortune cumsum'ing all of the individual per-capita rates
+brates <- b-bs*length(b)
+drates <- s*b^2+ds*length(b)
+rates <- c(brates, drates)
+wheel <- cumsum(rates)/sum(rates)
+for (i in 1:1e5) {
+  ## choose an individual and event at random
+  rand <- runif(1)
+  ## who does the event happen to?
+  ind <- ifelse(min(which(rand < wheel)) <= length(b),
+                min(which(rand < wheel)),
+                min(which(rand < wheel))-length(b))
+  ## which event happens?
+  birth <- death <- 0
+  if (rand <= sum(brates)/sum(rates))
+    birth <- 1
+  else death <- 1
+  events4[i,] <- c(ind,birth,death)
+}
+events4 <- as.data.frame(events4)
+colnames(events4) <- c("ind","birth","death")
+
+## what is the probability of giving birth or dying, given the individual's trait, for each GEM formulation?
+events3 %>% group_by(ind) %>% summarise(pbirth=sum(birth)/1e5, pdeath=sum(death)/1e5) %>% as.data.frame -> event_probs
+events4 %>% group_by(ind) %>% summarise(pbirth=sum(birth)/1e5, pdeath=sum(death)/1e5) %>% as.data.frame -> event_probs2
+
+## observed probabilities of giving birth in the original gem
+plot(sort(b), event_probs[order(b),"pbirth"], ylim=range(event_probs2[order(b),"pbirth"]), xlab="Birth rate", ylab="Probability of giving birth")
+## expected probability of giving birth, based on the above
+lines(sort(b), (sort(b)-bs*length(b))/((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))*length(b)), lwd=2, lty=2)
+## observed probabilities of giving birth in the many-slice gem
+points(sort(b), event_probs2[order(b),"pbirth"], col=2)
+## expected probabilities 
+lines(sort(b), (sort(b)-bs*length(b))/(sum(sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lwd=2, lty=2, col=2)
+
+## observed probabilities of dying in the original gem
+plot(sort(b), event_probs[order(b),"pdeath"], ylim=range(event_probs2[order(b),"pdeath"]), xlab="Birth rate", ylab="Probability of dying")
+## expected probability of giving birth, based on the above
+lines(sort(b), (s*sort(b)^2+ds*length(b))/((sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))*length(b)), lwd=2, lty=2)
+## observed probabilities of giving birth in the many-slice gem
+points(sort(b), event_probs2[order(b),"pdeath"], col=2)
+## expected probabilities 
+lines(sort(b), (s*sort(b)^2+ds*length(b))/(sum(sort(b)-bs*length(b)+s*sort(b)^2+ds*length(b))), lwd=2, lty=2, col=2)
+
+mutate(event_probs, fitness=pbirth-pdeath) -> event_probs
+mutate(event_probs2, fitness=pbirth-pdeath) -> event_probs2
+## observed "fitness"
+plot(sort(b), event_probs[order(b),"fitness"], xlab="Birth rate", ylab="P(birth)-P(death)", ylim=range(c(event_probs[,"fitness"],event_probs2[,"fitness"])))
+## expected fitness
+lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/((sort(b)-bs*length(b)+(s*sort(b)^2+ds*length(b)))*length(b)), lwd=2, lty=2)
+points(sort(b), event_probs2[order(b),"fitness"], col=2)
+lines(sort(b), (sort(b)-bs*length(b)-(s*sort(b)^2+ds*length(b)))/(sum(sort(b)-bs*length(b)+(s*sort(b)^2+ds*length(b)))), lwd=2, lty=2, col=2)
+
+```
+
+When the mean trait is above the ESS, we see that, in the original formulation of the GEM, individuals with traits below the mean are more likely to give birth and die than in the many-slice GEM; conversely, in the many-slice GEM, individuals with traits above the mean are more likely to give birth and die.
+The original GEM formulation predicts a slightly higher fitness across all trait values than in the many-slice GEM, but the difference is largest at higher trait values.
+
+
+```{r, echo=FALSE}
+
+pick_individuals <- function(N0, traitmean, traitsd) {
+  mu <- log(traitmean^2 / sqrt(traitsd^2+traitmean^2))
+  sigma <- sqrt(log(traitsd^2/traitmean^2 + 1))
+  ## record this initial distribution in the output
+  return(rlnorm(N0, meanlog=mu, sdlog=sigma))
+}
+
+## generate many different individuals
+set.seed(10010)
+b <- pick_individuals(100, 0.25, 0.05)
+
+## simulate the choosing of individuals and events under both GEM formulations many, many times and confirm that the probabilities of any individual being chosen match the expectation derived above
+s <- 2
+bs <- ds <- 5e-4
+data.frame(ind=sample(1:length(b), 1e5, replace=TRUE), ## pick individuals at random
+           rand=runif(1e5), ## draw a random number
+           birth=rep(0,1e5),
+           death=rep(0,1e5)) %>% 
+  mutate(birth=ifelse(rand > (b[ind]-bs*length(b))/(b[ind]-bs*length(b)+s*b[ind]^2+ds*length(b)), 0, 1), ## compare the random number to the relative rate of birth
+         death=ifelse(birth==0,1,0)) -> events
+  
+## Alternative GEM
+events2 <- array(NA, dim=c(1e5,3))
+## create the "wheel" of fortune cumsum'ing all of the individual per-capita rates
+brates <- b-bs*length(b)
+drates <- s*b^2+ds*length(b)
+rates <- c(brates, drates)
+wheel <- cumsum(rates)/sum(rates)
+for (i in 1:1e5) {
+  ## choose an individual and event at random
+  rand <- runif(1)
+  ## who does the event happen to?
+  ind <- ifelse(min(which(rand < wheel)) <= length(b),
+                min(which(rand < wheel)),
+                min(which(rand < wheel))-length(b))
+  ## which event happens?
+  birth <- death <- 0
+  if (rand <= sum(brates)/sum(rates))
+    birth <- 1
+  else death <- 1
+  events2[i,] <- c(ind,birth,death)
+}
+events2 <- as.data.frame(events2)
+colnames(events2) <- c("ind","birth","death")
+
+## what is the average birth rate under the two simulations?
+nbirths_orig <- sum(events$birth)
+
+
+
+```
