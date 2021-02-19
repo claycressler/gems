@@ -318,13 +318,14 @@ for (i in 1:length(bmax_seq)) {
     set.seed(1343421)
     seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             function(s) logistic_GEM(seed=s, dt=1, tmax=100, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
              mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
     data.frame(time=0:1000,
                N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               selGrad=lapply(out, function(l) 1-2*s*(lapply(l$traits, mean) %>% unlist)) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) mean(r,na.rm=TRUE)),
                cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i) -> output1[[i]]
 }
@@ -338,18 +339,23 @@ output2 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
     seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
              mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
     data.frame(time=0:1000,
                N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               selGrad=lapply(out, function(l) 1-2*s*(lapply(l$traits, mean) %>% unlist)) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) mean(r,na.rm=TRUE)),
                cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i)  -> output2[[i]]
 }
 tout = Sys.time()
 tout-tin
+
+out <- vector(mode='list', length=100)
+for (j in 1:100)
+    out[[j]] <- logistic_GEM(seed=seeds[j], dt=1, tmax=100, N0=22, traitmean=1.5, traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s)
 
 
 
@@ -359,13 +365,14 @@ output3 <- vector(mode='list', length=length(bmax_seq))
 for (i in 2:length(bmax_seq)) {
     seeds <- floor(runif(100, 1, 1e5))
     mclapply(seeds,
-             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=0.02, ds=0.02, slope=1/6),
+             function(s) logistic_GEM(seed=s, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
              mc.cores=8
     ) -> out 
     ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
     data.frame(time=0:1000,
                N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               selGrad=lapply(out, function(l) 1-2*s*(lapply(l$traits, mean) %>% unlist)) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) mean(r,na.rm=TRUE)),
                cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i)  -> output3[[i]]
 }
@@ -387,6 +394,14 @@ output3 %>%
 saveRDS(out1, file="Logistic_GEM_bs=ds=025_varying_b0_and_N0.RDS")
 saveRDS(out2, file="Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
 saveRDS(out3, file="Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
+
+out1 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_and_N0.RDS")
+out2 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
+out3 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
+
+out1 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
+
+ggplot(o1, aes(x=time, y=Val)) + facet_wrap(init~Var) + geom_line() + theme_bw()
 
 ggplot(out1, aes(x=time, y=N)) + facet_wrap(~init) + geom_line() + theme_bw()
 
@@ -422,6 +437,7 @@ for (i in 1:length(bmax_seq)) {
     data.frame(time=0:1000,
                N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               selGrad=lapply(out, function(l) 1-2*s*(lapply(l$traits, mean) %>% unlist)) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) mean(r,na.rm=TRUE)),
                cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i) -> output1[[i]]
 }
@@ -442,6 +458,7 @@ for (i in 1:length(bmax_seq)) {
     data.frame(time=0:1000,
                N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               selGrad=lapply(out, function(l) 1-2*s*(lapply(l$traits, mean) %>% unlist)) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) mean(r,na.rm=TRUE)),
                cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i)  -> output2[[i]]
 }
@@ -463,6 +480,7 @@ for (i in 2:length(bmax_seq)) {
     data.frame(time=0:1000,
                N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
+               selGrad=lapply(out, function(l) 1-2*s*(lapply(l$traits, mean) %>% unlist)) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) mean(r,na.rm=TRUE)),
                cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
                set=i)  -> output3[[i]]
 }

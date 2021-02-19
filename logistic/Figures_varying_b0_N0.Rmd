@@ -1,0 +1,25 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r, fig.height=5, fig.width=9, units='in', res=300}
+out1 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_and_N0.RDS")
+out2 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
+out3 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
+
+out1 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
+
+mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100)))
+
+ggplot(o1, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + geom_line() +
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline()
+  theme_bw()
+```
