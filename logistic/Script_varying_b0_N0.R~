@@ -1,17 +1,3 @@
----
-title: "Untitled"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r, echo=FALSE}
-## Start simulations with a range of initial population sizes and trait values
-## ESS is bmax* = 1/(2*slope) = 3
-## Ecological equilibrium N* = (bmax-s*bmax^2)/(bs+ds)
-setwd("~/gems/logistic")
 source("logistic_GEM.R")
 library(tidyverse)
 library(parallel)
@@ -29,7 +15,7 @@ for (i in 1:length(bmax_seq)) {
   mclapply(seeds,
            function(seed) logistic_GEM(seed=seed, dt=1, tmax=1000, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
            mc.cores=8
-  ) -> out 
+  ) -> out
   ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
   output1[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
@@ -37,7 +23,7 @@ for (i in 1:length(bmax_seq)) {
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 }
 tout = Sys.time()
 tout-tin
@@ -47,18 +33,18 @@ tout-tin
 tin = Sys.time()
 output2 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
-     mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
-    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    output2[[i]] <- data.frame(time=0:1000,
+  mclapply(seeds,
+           function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
+  ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+  output2[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 }
 tout = Sys.time()
 tout-tin
@@ -67,18 +53,18 @@ tout-tin
 tin = Sys.time()
 output3 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
-    mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
-    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    output3[[i]] <- data.frame(time=0:1000,
+  mclapply(seeds,
+           function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
+  ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+  output3[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 }
 tout = Sys.time()
 tout-tin
@@ -104,15 +90,15 @@ for (i in 1:length(bmax_seq)) {
   mclapply(seeds,
            function(seed) logistic_GEM(seed=seed, dt=1, tmax=1000, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
            mc.cores=8
-  ) -> out 
-  ## create a dataframe storing the results 
+  ) -> out
+  ## create a dataframe storing the results
   output1[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
   #cumExtinct=cumsum(sapply(1:1001, function(t) sum((lapply(out, function(l) min(which((lapply(l$traits, length) %>% unlist)==0))) %>% unlist)==t))),
 }
 tout = Sys.time()
@@ -126,16 +112,16 @@ for (i in 1:length(bmax_seq)) {
   set.seed(1343421)
   seeds <- floor(runif(100, 1, 1e5))
   mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
+           function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
   output2[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 
 }
 tout = Sys.time()
@@ -145,18 +131,18 @@ tout-tin
 tin = Sys.time()
 output3 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
-    mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
-    
-      output3[[i]] <- data.frame(time=0:1000,
+  mclapply(seeds,
+           function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
+
+  output3[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 
 }
 tout = Sys.time()
@@ -178,17 +164,17 @@ N0_seq <- sapply(bmax_seq, function(b) (b-s*b^2)/(bs+ds))
 output1 <- vector(mode='list', length=length(bmax_seq))
 tin = Sys.time()
 for (i in 1:length(bmax_seq)) {
-    mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=100, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
-    output1[[i]] <- data.frame(time=0:1000,
+  mclapply(seeds,
+           function(se) logistic_GEM(seed=se, dt=1, tmax=100, N0=N0_seq[i], traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
+  output1[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 }
 tout = Sys.time()
 tout-tin
@@ -198,18 +184,18 @@ tout-tin
 tin = Sys.time()
 output2 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
-    mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
-    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    output2[[i]] <- data.frame(time=0:1000,
+  mclapply(seeds,
+           function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=10, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
+  ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+  output2[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 }
 tout = Sys.time()
 tout-tin
@@ -218,18 +204,18 @@ tout-tin
 tin = Sys.time()
 output3 <- vector(mode='list', length=length(bmax_seq))
 for (i in 1:length(bmax_seq)) {
-    mclapply(seeds,
-             function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
-             mc.cores=8
-    ) -> out 
-    ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
-    output3[[i]] <- data.frame(time=0:1000,
+  mclapply(seeds,
+           function(se) logistic_GEM(seed=se, dt=1, tmax=1000, N0=50, traitmean=bmax_seq[i], traitcv=0.3, h2=0.75, bs=bs, ds=ds, slope=s),
+           mc.cores=8
+  ) -> out
+  ## create a dataframe storing the results (the median population size across the replicates and the median mean trait)
+  output3[[i]] <- data.frame(time=0:1000,
                              N=lapply(out, function(l) lapply(l$traits, function(j) ifelse(length(j)>0,length(j),NA)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              b=lapply(out, function(l) lapply(l$traits, function(t) mean(t,na.rm=TRUE)) %>% unlist) %>% do.call("cbind.data.frame",.) %>% apply(.,1,function(r) median(r,na.rm=TRUE)),
                              init=paste("b0=",signif(bmax_seq[i],3),"\n","N0=",signif(N0_seq[i],3),sep="")) %>%
     mutate(.,
            QGselGrad=1-2*s*b,
-           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2) 
+           LRSselGrad=(ds*N-b*(b-2*bs*N)*s)/(ds*N+b^2*s)^2)
 }
 tout = Sys.time()
 tout-tin
@@ -241,20 +227,3 @@ output3 %>% do.call("rbind.data.frame",.) -> out3
 saveRDS(out1, file="Logistic_GEM_bs=ds=0375_varying_b0_and_N0.RDS")
 saveRDS(out2, file="Logistic_GEM_bs=ds=0375_varying_b0_N0=10.RDS")
 saveRDS(out3, file="Logistic_GEM_bs=ds=0375_varying_b0_N0=50.RDS")
-```
-
-```{r, fig.height=5, fig.width=9, units='in', res=300}
-out1 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_and_N0.RDS")
-out2 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
-out3 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
-
-out1 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
-
-mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100)))
-
-ggplot(o1, aes(x=time, y=Val)) +
-  facet_grid(Var~init,scales="free_y") + geom_line() +
-  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
-  geom_hline()
-  theme_bw()
-```
