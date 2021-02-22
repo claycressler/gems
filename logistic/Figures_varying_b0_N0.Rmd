@@ -1,20 +1,22 @@
 ---
 title: "Untitled"
-output: html_document
+output:
+  bookdown::html_document2
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r, echo=FALSE}
-## Start simulations with a range of initial population sizes and trait values
-## ESS is bmax* = 1/(2*slope) = 3
-## Ecological equilibrium N* = (bmax-s*bmax^2)/(bs+ds)
 setwd("~/gems/logistic")
 source("logistic_GEM.R")
 library(tidyverse)
 library(parallel)
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+## Start simulations with a range of initial population sizes and trait values
+## ESS is bmax* = 1/(2*slope) = 3
+## Ecological equilibrium N* = (bmax-s*bmax^2)/(bs+ds)
 
 ## Start at the ecological equilibrium given the trait value
 bmax_seq <- seq(0.5,5.5,0.5)
@@ -243,18 +245,202 @@ saveRDS(out2, file="Logistic_GEM_bs=ds=0375_varying_b0_N0=10.RDS")
 saveRDS(out3, file="Logistic_GEM_bs=ds=0375_varying_b0_N0=50.RDS")
 ```
 
-```{r, fig.height=5, fig.width=9, units='in', res=300}
+Here I simulated the eco-evolutionary dynamics of the model under a wide range of initial population sizes and birth rates.
+The results I am presenting show the median population size and median mean birth across 100 replicate simulations, each run for 1000 time steps.
+
+Fig. \@ref(fig:eco-evo1) shows the ecological and evolutionary dynamics as the initial population size and initial trait vary. 
+I assume that the initial population size is at the ecological equilibrium given the initial trait value; note that the initial population sizes are reflected around the expected eco-evolutionary equilibrium (b=3, N=30; red lines in Fig. \@ref(fig:eco-evo1)), so that the initial population size is the same when $b_0=0.5$ and when $b_0=5.5$.
+There are a couple of things to notice here.
+First, the average population size and average trait are below the expected eco-evolutionary equilibrium in all panels (blue lines in Fig. \@ref(fig:eco-evo1)).
+This is surprising because it means that the population size actually wanders *away* from the eco-evolutionary equilibrium when it starts there (middle column of the figure).
+Second, the average stationary population size is smaller the larger the initial trait value.
+This is likely due to extinction - although I do not include populations that have gone extinct in the calculation once they are extinct, they are potentially lowering the median up to the point they go extinct.
+
+```{r eco-evo1, echo=FALSE, fig.height=5, fig.width=9, fig.cap="Eco-evo dynamics varying *b*~0 and *N*~0.", units='in', res=300}
 out1 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_and_N0.RDS")
-out2 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
-out3 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
 
 out1 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
 
-mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100)))
+mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100))) %>% 
+  mutate(expVal=rep(c(3,30)))
 
 ggplot(o1, aes(x=time, y=Val)) +
-  facet_grid(Var~init,scales="free_y") + geom_line() +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() +
   geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
-  geom_hline()
-  theme_bw()
+  geom_hline(aes(yintercept=expVal, col="blue"), mean_Val) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+
+```
+
+Fig. \@ref(fig:evo1) gives a close-up of the evolutionary dynamics when the initial population size is at the ecological equilibrium given the initial trait value. 
+The other rows show the selection gradients given by the per-capita growth rate and the lifetime reproductive success.
+The blue lines show the average of the trait or selection gradients over the final 100 time steps. 
+The dashed red line marks zero.
+It is clear that the trait value is much closer to the value that minimizes the selection gradient specified by lifetime reproductive success, rather than by the selection gradient given by per-capita growth rate.
+In fact, when the initial trait value is above the ESS, the quantitative genetics selection gradient is strongly negative, and passes through zero on its way to settling on a positive value (this is also true for the LRS selection gradient, although it was less strongly negative initially).
+
+
+```{r evo1, echo=FALSE, fig.height=5, fig.width=9, fig.cap="Evolutionary dynamics and selection gradients when the initial *b* and *N* vary.", units='in', res=300}
+
+out1 %>% pivot_longer(c(b,QGselGrad,LRSselGrad), names_to="Var", values_to="Val") -> o11
+
+mean_Val <- o11 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100)))
+
+ggplot(o11, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() + 
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline(aes(yintercept=0, col="blue"), linetype='dashed') +
+  theme_bw() + 
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+```
+
+That difference is actually quite interesting, as the evolutionary dynamics are really, really fast when the initial trait value is above the ESS (note how quickly the average $b$ value drops when $b_0=5.5$ compared to how quickly it drops when $b_0=0.5$).
+This would presumably because an individual with a trait value far above the ESS is much more likely to die than to give birth, but that's actually not true. 
+Fig. \@ref(fig:bprob) shows the probability of giving birth as a function of $b$ for different population sizes between 10 and 30.
+
+```{r bprob, fig.height=4, fig.width=4, units='in', fig.cap="Probability of giving birth for different trait values and population sizes.", res=300}
+bs <- ds <- 0.025
+s <- 1/6
+b <- seq(0.5, 6, 0.1)
+n <- 10
+plot(b, (b-bs*n)/(b-bs*n+s*b^2+ds*n), type='l', ylim=c(0,0.7), ylab="Prob. birth", lwd=2)
+n <- 20
+lines(b, (b-bs*n)/(b-bs*n+s*b^2+ds*n), lwd=2, lty=2)
+n <- 30
+lines(b, (b-bs*n)/(b-bs*n+s*b^2+ds*n), lwd=2, lty=3)
+legend(x='bottomright', c("N=10","N=20","N=30"), lty=1:3, bty='n')
+
+```
+
+This suggests two results that need a bit more investigation:
+
+1. Why does the population wander away from the eco-evolutionary equilibrium?
+
+2. Why are the evolutionary dynamics so much faster when $b_0$ is larger than when it is small?
+
+Another thing that I noticed in looking at the selection gradients is the difference in the  QG and LRS selection gradients.
+When the initial $b_0$ is very large, the LRS selection gradient is not strongly negative, whereas the QG selection gradient is.
+But when $b_0$ is very small, both selection gradients are large and positive.
+This is because the initial population sizes affect the LRS selection gradient, but not the QG selection gradient.
+As you can see in Fig. \@ref(fig:selgrads), it is the case that the LRS selection gradient is much flatter at high $b$ values (red lines) whereas the QG selection gradient is symmetrical about $b=0$ (black line).
+I'm not totally sure what the implications of this finding are, exactly. On the one hand it would seem to argue that, when populations reach an approximate ecological equilibrium, the selection against large birth rates should be pretty weak, and so you might expect the approximate evolutionary equilibrium to be slightly higher than the ESS, which is not what we observe.
+
+```{r selgrads, fig.height=4, fig.width=4, fig.cap="Looking at the magnitudes of the QG (black) and LRS (red) selection gradients as *b* and *N* vary.", units='in', res=300}
+ds = bs = 0.025
+s = 1/6
+b = seq(0.5,5.5,0.1)
+
+plot(b, 1-2*s*b, type='l', ylab="Selection gradients")
+abline(h=0, col=gray(0.5))
+n = 10
+lines(b, (ds*n - b*(b - 2*bs*n)*s)/(ds*n + b^2*s)^2, lwd=2, col=2)
+n = 20
+lines(b, (ds*n - b*(b - 2*bs*n)*s)/(ds*n + b^2*s)^2, lwd=2, col=2, lty=2)
+n = 30
+lines(b, (ds*n - b*(b - 2*bs*n)*s)/(ds*n + b^2*s)^2, lwd=2, col=2, lty=3)
+
+legend(x='topright', c("N=10","N=20","N=30"), lty=c(1,2,3), bty='n')
+
+```
+
+Fig. \@ref(fig:eco-evo2) shows the eco-evolutionary dynamics when the initial population size is held fixed at $N_0=10$.
+Here the dynamics are more similar across the initial $b_0$ values.
+The population size grows, and falls short of the expected ecological equilibrium, and the trait settles on a value that is below the ESS but near the value that maximizes the LRS (Fig. \@ref(fig:evo2)).
+
+```{r eco-evo2, echo=FALSE, fig.height=5, fig.width=9, units='in', fig.cap="Eco-evolutionary dynamics when the initial *b* varies but the initial *N* is fixed at 10.", res=300}
+out2 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=10.RDS")
+
+out2 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
+
+mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100))) %>% 
+  mutate(expVal=rep(c(3,30)))
+
+ggplot(o1, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() +
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline(aes(yintercept=expVal, col="blue"), mean_Val) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+
+```
+
+```{r evo2, echo=FALSE, fig.height=5, fig.width=9, units='in', fig.cap="Close-up of the evolutionary dynamics when the initial population size is 10.", res=300}
+
+out2 %>% pivot_longer(c(b,QGselGrad,LRSselGrad), names_to="Var", values_to="Val") -> o11
+
+mean_Val <- o11 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100)))
+
+ggplot(o11, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() + 
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline(aes(yintercept=0, col="blue"), linetype='dashed') +
+  theme_bw() + 
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+```
+
+When the initial population size is 50, however, the dynamics rapidly converge to the dynamics where both $b_0$ and $N_0$, because the population rapidly crashes to the ecological equilibrium given the population size (Fig. \@ref(fig:ecoevo3)).
+
+```{r ecoevo3, echo=FALSE, fig.height=5, fig.width=9, units='in', fig.cap="Ecological and evolutionary dynamics when the initial population size is fixed at N=50 but the initial trait value varies.", res=300}
+out3 <- readRDS("Logistic_GEM_bs=ds=025_varying_b0_N0=50.RDS")
+
+out3 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
+
+mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100))) %>% 
+  mutate(expVal=rep(c(3,30)))
+
+ggplot(o1, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() +
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline(aes(yintercept=expVal, col="blue"), mean_Val) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+
+```
+
+If I change the strength of density-dependence so that the population size is smaller at the eco-evolutionary equilibrium (20 instead of 30), there is a tremendous amount of extinction, especially when the initial trait value is large (Fig. \@ref(fig:ecoevo4)). 
+This large number of extinctions makes the dynamics very messy and hard to interpret.
+
+```{r ecoevo4, echo=FALSE, fig.height=5, fig.width=9, units='in', fig.cap="Ecological and evolutionary dynamics as the initial population size and initial trait vary and the expected equilibrium population size is only 20.", res=300}
+out1 <- readRDS("Logistic_GEM_bs=ds=0375_varying_b0_and_N0.RDS")
+
+out1 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
+
+mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100))) %>% 
+  mutate(expVal=rep(c(3,20)))
+
+ggplot(o1, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() +
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline(aes(yintercept=expVal, col="blue"), mean_Val) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+
+```
+
+When the expected equilibrium population size is larger ($\hat{N}=60$), the system appears to converge to the expected evolutionary equilibrium but not, curiously, the expected ecological equilibrium (Fig. \@ref(fig:ecoevo5)). 
+This suggests a potential error in the code that needs to be addressed.
+
+```{r ecoevo5, echo=FALSE, fig.height=5, fig.width=9, units='in', fig.cap="Ecological and evolutionary dynamics as the initial population size and initial trait vary and the expected ecological equilibrium is 60.", res=300}
+out1 <- readRDS("Logistic_GEM_bs=ds=0125_varying_b0_and_N0.RDS")
+
+out1 %>% pivot_longer(c(N,b), names_to="Var", values_to="Val") -> o1
+
+mean_Val <- o1 %>% group_by(init, Var) %>% summarize(meanVal=mean(tail(Val,100))) %>% 
+  mutate(expVal=rep(c(3,60)))
+
+ggplot(o1, aes(x=time, y=Val)) +
+  facet_grid(Var~init,scales="free_y") + 
+  geom_line() +
+  geom_hline(aes(yintercept=meanVal, col="red"), mean_Val) +
+  geom_hline(aes(yintercept=expVal, col="blue"), mean_Val) +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90), legend.position="none")
+
 ```
